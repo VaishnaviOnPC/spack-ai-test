@@ -38,7 +38,10 @@ def extract_versions(pkg_class) -> List[str]:
     def sort_key(v: str):
         parts = []
         for tok in v.replace("-", ".").split("."):
-            parts.append(int(tok) if tok.isdigit() else tok)
+            if tok.isdigit():
+                parts.append((0, int(tok)))
+            else:
+                parts.append((1, tok))
         return parts
 
     raw = list(getattr(pkg_class, "versions", {}).keys())
