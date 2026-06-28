@@ -36,6 +36,18 @@ def setup_parser(subparser):
         help="use LLM to generate off-leading-edge test scenarios for this package",
     )
     subparser.add_argument(
+        "--mape",
+        action="store_true",
+        default=False,
+        help="run the full MAPE-K loop: analyze dep risk, generate specs, validate with concretizer, save to KB",
+    )
+    subparser.add_argument(
+        "--kb",
+        default="./kb.json",
+        metavar="PATH",
+        help="path to the knowledge base JSON file (default: ./kb.json)",
+    )
+    subparser.add_argument(
         "--model",
         default="claude-haiku-4-5",
         metavar="MODEL",
@@ -87,6 +99,10 @@ def ai_test(parser, args):
 
     if args.generate:
         from ai_test.llm import analyze
-        tty.msg(f"Generating test scenarios (model: {args.model})")
+        tty.msg(f"Generating test scenarios (model: {args.model})...")
         result = analyze(schema, model=args.model)
         _print_test_scenarios(result)
+
+    if args.mape:
+        from ai_test.mape import run
+        run(args.package, kb_path=args.kb, model=args.model)

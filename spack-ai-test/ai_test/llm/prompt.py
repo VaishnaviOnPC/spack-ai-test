@@ -12,17 +12,24 @@ Only use variants and versions explicitly declared in the package schema.
 JSON output only, no prose, no markdown.\
 """
 
-TASK_PROMPT = """\
+def _build_task_prompt(compilers=None) -> str:
+    if compilers:
+        compiler_constraint = f"Every spec MUST use one of these compilers: {', '.join('%' + c for c in compilers)}"
+        example_compiler = "%" + compilers[0]
+    else:
+        compiler_constraint = "Every spec MUST include a compiler (e.g. %gcc@13.3.0)"
+        example_compiler = "%gcc@13.3.0"
+
+    return f"""\
 Generate 3-5 Spack specs for off-leading-edge configurations not covered by CI.
 
 Requirements:
-- Every spec MUST include a compiler: %gcc@11.4.0, %gcc@12.3.0, %gcc@13.3.0, %clang@14.0.0, %clang@15.0.7, etc. Use compilers declared in the schema, prioritizing older versions. But avoid compilers with many declared conflicts unless necessary to create an off-leading-edge scenario. Do not use compilers that are known to be completely unsupported.
+- {compiler_constraint}
 - Use +/~ for boolean variants (NOT variant=True or variant=False)
 - Focus on older package versions, or non-default variant combinations
 
 Output only:
-{"test_scenarios": ["<pkg@version +var ~var %compiler@version>", ...]}\
-"""
+{{"test_scenarios": ["<pkg@version +var ~var {example_compiler}>", ...]}}"""
 
 
 def build_messages(
@@ -30,6 +37,7 @@ def build_messages(
     risk_context: str,
     reference_context: str,
     conflict_context: str,
+    compilers=None,
 ) -> list:
     return [
         {"role": "system", "content": SYSTEM_PROMPT},
@@ -37,7 +45,7 @@ def build_messages(
         {"role": "user", "content": risk_context},
         {"role": "user", "content": reference_context},
         {"role": "user", "content": conflict_context},
-        {"role": "user", "content": TASK_PROMPT},
+        {"role": "user", "content": _build_task_prompt(compilers)},
     ]
 
 

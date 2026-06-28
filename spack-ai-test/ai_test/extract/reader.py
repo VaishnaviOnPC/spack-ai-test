@@ -44,7 +44,10 @@ def extract_versions(pkg_class) -> List[str]:
                 parts.append((1, tok))
         return parts
 
-    raw = list(getattr(pkg_class, "versions", {}).keys())
+    raw = [
+        str(v) for v, attrs in getattr(pkg_class, "versions", {}).items()
+        if not attrs.get("deprecated", False)
+    ]
     return sorted((str(v) for v in raw), key=sort_key, reverse=True)
 
 
@@ -86,16 +89,16 @@ def _parse_variant(vdef, when_from_outer):
         when = getattr(vdef, "when", None) or when_from_outer
         raw_values = getattr(vdef, "values", None)
 
-    when_str = str(when).strip() if when and str(when).strip() not in ("", "@:") else None
+    when_str = str(when).strip() if when else None
+    if when_str in ("", "@:"):
+        when_str = None
 
-    if raw_values is not None and callable(raw_values):
-        raw_values = None
-    if raw_values is not None:
+    if raw_values is None or callable(raw_values):
+        values = None
+    else:
         values = [str(v) for v in raw_values]
         if set(values) in ({"True", "False"}, {"true", "false"}):
             values = None
-    else:
-        values = None
 
     return VariantInfo(default=default, description=desc, when=when_str, values=values)
 

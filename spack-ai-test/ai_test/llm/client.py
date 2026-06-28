@@ -4,6 +4,13 @@ import urllib.error
 import urllib.request
 
 
+def _get_key(env_var: str) -> str:
+    key = os.environ.get(env_var, "")
+    if not key:
+        raise ValueError(f"{env_var} not set")
+    return key
+
+
 class LLMClient:
     def __init__(self, model="claude-haiku-4-5"):
         self.model = model
@@ -16,17 +23,10 @@ class LLMClient:
         return "openai"
 
     def _ask_anthropic(self, messages):
-        api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-        if not api_key:
-            raise ValueError("ANTHROPIC_API_KEY not set")
+        api_key = _get_key("ANTHROPIC_API_KEY")
 
-        system = ""
-        user_messages = []
-        for msg in messages:
-            if msg["role"] == "system":
-                system = msg["content"]
-            else:
-                user_messages.append(msg)
+        system = next((m["content"] for m in messages if m["role"] == "system"), "")
+        user_messages = [m for m in messages if m["role"] != "system"]
 
         payload = json.dumps({
             "model": self.model,
@@ -54,9 +54,7 @@ class LLMClient:
         return result["content"][0]["text"]
 
     def _ask_openai(self, messages):
-        api_key = os.environ.get("OPENAI_API_KEY", "")
-        if not api_key:
-            raise ValueError("OPENAI_API_KEY not set")
+        api_key = _get_key("OPENAI_API_KEY")
 
         payload = json.dumps({
             "model": self.model,
@@ -82,19 +80,10 @@ class LLMClient:
         return result["choices"][0]["message"]["content"]
 
     def _ask_gemini(self, messages):
-        api_key = os.environ.get("GEMINI_API_KEY", "")
-        if not api_key:
-            raise ValueError("GEMINI_API_KEY not set")
+        api_key = _get_key("GEMINI_API_KEY")
 
-        # Gemini requires alternating user/model turns, so merge all
-        # user context layers into a single message.
-        system = ""
-        user_parts = []
-        for msg in messages:
-            if msg["role"] == "system":
-                system = msg["content"]
-            else:
-                user_parts.append(msg["content"])
+        system = next((m["content"] for m in messages if m["role"] == "system"), "")
+        user_parts = [m["content"] for m in messages if m["role"] != "system"]
 
         body = {
             "contents": [

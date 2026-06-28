@@ -33,8 +33,7 @@ def print_schema(schema: PackageSchema, output_path: Optional[str] = None):
 
     seen = {}
     for dep in schema.dependencies:
-        if dep.name not in seen:
-            seen[dep.name] = dep
+        seen.setdefault(dep.name, dep)
 
     print()
     print("Dependencies (" + str(len(seen)) + "):")
