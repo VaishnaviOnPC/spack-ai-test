@@ -2,7 +2,7 @@ SYSTEM_PROMPT = """\
 You are a Spack HPC package manager expert.
 
 Generate off-leading-edge test scenarios: Spack specs that CI does NOT test.
-CI focuses on the newest versions with newest dependencies — target everything else:
+CI focuses on the newest versions with newest dependencies, target everything else:
 - Older versions combined with newer compilers
 - Version boundaries where upper limits may be missing
 - Non-default variant combinations
@@ -12,7 +12,7 @@ Only use variants and versions explicitly declared in the package schema.
 JSON output only, no prose, no markdown.\
 """
 
-def _build_task_prompt(compilers=None) -> str:
+def _task_prompt(compilers=None) -> str:
     if compilers:
         compiler_constraint = f"Every spec MUST use one of these compilers: {', '.join('%' + c for c in compilers)}"
         example_compiler = "%" + compilers[0]
@@ -32,20 +32,14 @@ Output only:
 {{"test_scenarios": ["<pkg@version +var ~var {example_compiler}>", ...]}}"""
 
 
-def build_messages(
-    package_context: str,
-    risk_context: str,
-    reference_context: str,
-    conflict_context: str,
-    compilers=None,
-) -> list:
+def build_messages(pkg_ctx, risk_ctx, ref_ctx, conflict_ctx, compilers=None) -> list:
     return [
         {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": package_context},
-        {"role": "user", "content": risk_context},
-        {"role": "user", "content": reference_context},
-        {"role": "user", "content": conflict_context},
-        {"role": "user", "content": _build_task_prompt(compilers)},
+        {"role": "user", "content": pkg_ctx},
+        {"role": "user", "content": risk_ctx},
+        {"role": "user", "content": ref_ctx},
+        {"role": "user", "content": conflict_ctx},
+        {"role": "user", "content": _task_prompt(compilers)},
     ]
 
 

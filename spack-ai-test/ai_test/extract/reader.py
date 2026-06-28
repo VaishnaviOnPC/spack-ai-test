@@ -35,7 +35,7 @@ def _dep_type(dep_obj) -> List[str]:
 
 
 def extract_versions(pkg_class) -> List[str]:
-    def sort_key(v: str):
+    def ver_key(v: str):
         parts = []
         for tok in v.replace("-", ".").split("."):
             if tok.isdigit():
@@ -48,18 +48,18 @@ def extract_versions(pkg_class) -> List[str]:
         str(v) for v, attrs in getattr(pkg_class, "versions", {}).items()
         if not attrs.get("deprecated", False)
     ]
-    return sorted((str(v) for v in raw), key=sort_key, reverse=True)
+    return sorted((str(v) for v in raw), key=ver_key, reverse=True)
 
 
 def extract_dependencies(pkg_class) -> List[DependencyInfo]:
     deps = []
-    for when_key, dep_dict in getattr(pkg_class, "dependencies", {}).items():
-        when = str(when_key).strip() or None
+    for when_spec, dep_dict in getattr(pkg_class, "dependencies", {}).items():
+        when = str(when_spec).strip() or None
         if not isinstance(dep_dict, dict):
             continue
-        for name_key, dep_obj in dep_dict.items():
+        for dep_name, dep_obj in dep_dict.items():
             deps.append(DependencyInfo(
-                name=str(name_key),
+                name=str(dep_name),
                 bound=_dep_bound(dep_obj),
                 dep_type=_dep_type(dep_obj),
                 when=when,
@@ -77,16 +77,16 @@ def extract_conflicts(pkg_class) -> List[Dict[str, str]]:
     return result
 
 
-def _parse_variant(vdef, when_from_outer):
+def _parse_variant(vdef, pkg_when):
     if isinstance(vdef, dict):
         default = vdef.get("default", None)
         desc = str(vdef.get("description", "") or "")
-        when = vdef.get("when", None) or when_from_outer
+        when = vdef.get("when", None) or pkg_when
         raw_values = vdef.get("values", None)
     else:
         default = getattr(vdef, "default", None)
         desc = str(getattr(vdef, "description", "") or "")
-        when = getattr(vdef, "when", None) or when_from_outer
+        when = getattr(vdef, "when", None) or pkg_when
         raw_values = getattr(vdef, "values", None)
 
     when_str = str(when).strip() if when else None
@@ -105,10 +105,10 @@ def _parse_variant(vdef, when_from_outer):
 
 def extract_variants(pkg_class) -> Dict[str, VariantInfo]:
     variants = {}
-    for when_key, variant_dict in getattr(pkg_class, "variants", {}).items():
-        when_from_outer = str(when_key).strip() or None
+    for when_spec, variant_dict in getattr(pkg_class, "variants", {}).items():
+        pkg_when = str(when_spec).strip() or None
         if not isinstance(variant_dict, dict):
             continue
-        for vname_key, vdef in variant_dict.items():
-            variants[str(vname_key)] = _parse_variant(vdef, when_from_outer)
+        for vname, vdef in variant_dict.items():
+            variants[str(vname)] = _parse_variant(vdef, pkg_when)
     return variants

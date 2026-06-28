@@ -35,24 +35,23 @@ def _compiler_conflicts(pkg_class) -> int:
 def virtual_dependencies(pkg_class) -> List[str]:
     virtuals = []
     repo = spack.repo.PATH
-    for _when, dep_dict in getattr(pkg_class, "dependencies", {}).items():
+    for _, dep_dict in getattr(pkg_class, "dependencies", {}).items():
         if not isinstance(dep_dict, dict):
             continue
-        for name_key in dep_dict:
-            name = str(name_key)
-            if repo.is_virtual(name):
-                virtuals.append(name)
+        for name in dep_dict:
+            if repo.is_virtual(str(name)):
+                virtuals.append(str(name))
     return sorted(set(virtuals))
 
 
 def compute_signals(pkg_class, virtual_deps: List[str]) -> RiskSignals:
-    dep_names = set()
-    for _when, dep_dict in getattr(pkg_class, "dependencies", {}).items():
+    deps = set()
+    for _, dep_dict in getattr(pkg_class, "dependencies", {}).items():
         if isinstance(dep_dict, dict):
-            dep_names.update(str(k) for k in dep_dict)
+            deps.update(str(k) for k in dep_dict)
 
     return RiskSignals(
-        cross_language_bindings=_cross_language_bindings(dep_names),
+        cross_language_bindings=_cross_language_bindings(deps),
         custom_build_system=_custom_build_system(pkg_class),
         compiler_conflict_count=_compiler_conflicts(pkg_class),
         virtual_provider_count=len(virtual_deps),

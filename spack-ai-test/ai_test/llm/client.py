@@ -22,17 +22,22 @@ class LLMClient:
             return "gemini"
         return "openai"
 
-    def _ask_anthropic(self, messages):
+    def _anthropic(self, messages):
         api_key = _get_key("ANTHROPIC_API_KEY")
 
-        system = next((m["content"] for m in messages if m["role"] == "system"), "")
-        user_messages = [m for m in messages if m["role"] != "system"]
+        system = ""
+        msgs = []
+        for msg in messages:
+            if msg["role"] == "system":
+                system = msg["content"]
+            else:
+                msgs.append(msg)
 
         payload = json.dumps({
             "model": self.model,
             "max_tokens": 512,
             "system": system,
-            "messages": user_messages,
+            "messages": msgs,
         }).encode()
 
         req = urllib.request.Request(
@@ -53,7 +58,7 @@ class LLMClient:
 
         return result["content"][0]["text"]
 
-    def _ask_openai(self, messages):
+    def _openai(self, messages):
         api_key = _get_key("OPENAI_API_KEY")
 
         payload = json.dumps({
@@ -79,15 +84,15 @@ class LLMClient:
 
         return result["choices"][0]["message"]["content"]
 
-    def _ask_gemini(self, messages):
+    def _gemini(self, messages):
         api_key = _get_key("GEMINI_API_KEY")
 
         system = next((m["content"] for m in messages if m["role"] == "system"), "")
-        user_parts = [m["content"] for m in messages if m["role"] != "system"]
+        parts = [m["content"] for m in messages if m["role"] != "system"]
 
         body = {
             "contents": [
-                {"role": "user", "parts": [{"text": "\n\n".join(user_parts)}]}
+                {"role": "user", "parts": [{"text": "\n\n".join(parts)}]}
             ]
         }
         if system:
@@ -116,7 +121,7 @@ class LLMClient:
     def ask(self, messages: list) -> str:
         provider = self._provider()
         if provider == "anthropic":
-            return self._ask_anthropic(messages)
+            return self._anthropic(messages)
         if provider == "gemini":
-            return self._ask_gemini(messages)
-        return self._ask_openai(messages)
+            return self._gemini(messages)
+        return self._openai(messages)

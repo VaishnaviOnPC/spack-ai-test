@@ -17,8 +17,8 @@ def run(pkg_name: str, kb_path: str, model: str = "claude-haiku-4-5"):
     for dep in risk_deps:
         cond = f"  [when: {dep.when}]" if dep.when else ""
         print(f"  {dep.name}: {dep.score:.1f}/16.0{cond}")
-    print(f"Installed compilers:  {', '.join(installed_compilers) or 'none'}")
-    print(f"CI compiler set:      {', '.join(all_compilers)}")
+    print(f"Installed compilers: {', '.join(installed_compilers) or 'none'}")
+    print(f"CI compiler set: {', '.join(all_compilers)}")
 
     print()
     print("--- Plan ---")
@@ -41,16 +41,16 @@ def run(pkg_name: str, kb_path: str, model: str = "claude-haiku-4-5"):
         model=model,
     )
 
-    ci      = [r for r in results if not r.concretized and r.failure_reason is None]
-    failed  = [r for r in results if not r.concretized and r.failure_reason is not None]
-    passed  = [r for r in results if r.concretized]
+    ci = [r for r in results if not r.concretized and r.failure_reason is None]
+    failed = [r for r in results if not r.concretized and r.failure_reason is not None]
+    passed = [r for r in results if r.concretized]
 
     print()
     print("--- Results ---")
     print(f"Validated locally:  {len(passed) + len(failed)}")
-    print(f"  Concretized:      {len(passed)}")
-    print(f"  Failed:           {len(failed)}")
+    print(f"Concretized:  {len(passed)}")
+    print(f"Failed:  {len(failed)}")
     if ci:
         ci_needed = [c for c in all_compilers if c not in installed_compilers]
-        print(f"CI queue:           {len(ci)}  (needs: {', '.join(ci_needed)})")
-    print(f"Results saved to KB: {kb_path}")
+        print(f"CI queue:  {len(ci)}  (needs: {', '.join(ci_needed)})")
+    print(f"Results saved to KB:  {kb_path}")

@@ -22,25 +22,25 @@ def run_spec(spec_str: str) -> tuple:
     return passed, error
 
 
-def _spec_compiler(spec_str: str) -> Optional[str]:
+def _spec_compiler(spec_str: str):
     m = re.search(r'%(\w+@[\d.]+)', spec_str)
     return m.group(1) if m else None
 
 
-def _repair_spec(failed_spec: str, error: str, installed_compilers: List[str], model: str) -> Optional[str]:
+def _repair_spec(failed_spec: str, error: str, installed_compilers: List[str], model: str):
     from ai_test.llm.client import LLMClient
     from ai_test.llm.prompt import SYSTEM_PROMPT
 
-    compiler_str = ", ".join("%" + c for c in installed_compilers)
-    first_error_line = error.splitlines()[0]
+    compiler_list = ", ".join("%" + c for c in installed_compilers)
+    err_summary = error.splitlines()[0]
 
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
         {
             "role": "user",
             "content": (
-                f"The spec '{failed_spec}' failed concretization:\n{first_error_line}\n\n"
-                f"Generate ONE corrected spec. Use only these compilers: {compiler_str}.\n"
+                f"The spec '{failed_spec}' failed concretization:\n{err_summary}\n\n"
+                f"Generate ONE corrected spec. Use only these compilers: {compiler_list}.\n"
                 f"Output only: {{\"test_scenarios\": [\"<corrected spec>\"]}}"
             ),
         },
@@ -77,7 +77,7 @@ def execute_all(
         is_installed = not installed_compilers or compiler in installed_compilers
 
         if not is_installed:
-            print(f"  [→] {spec_str}  (CI queue — {compiler} not installed locally)")
+            print(f"  [→] {spec_str}  (CI queue: {compiler} not installed locally)")
             entry = KBEntry(
                 pkg_name=schema.name,
                 spec=spec_str,

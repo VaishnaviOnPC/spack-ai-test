@@ -26,19 +26,16 @@ def setup_parser(subparser):
     subparser.add_argument(
         "--json",
         action="store_true",
-        default=False,
         help="print raw JSON to stdout instead of the formatted report",
     )
     subparser.add_argument(
         "--generate",
         action="store_true",
-        default=False,
         help="use LLM to generate off-leading-edge test scenarios for this package",
     )
     subparser.add_argument(
         "--mape",
         action="store_true",
-        default=False,
         help="run the full MAPE-K loop: analyze dep risk, generate specs, validate with concretizer, save to KB",
     )
     subparser.add_argument(
@@ -60,7 +57,7 @@ def setup_parser(subparser):
     )
 
 
-def _print_test_scenarios(result):
+def _show_specs(result):
     print()
     print(f"Generated Test Scenarios: {result.package}")
 
@@ -101,7 +98,7 @@ def ai_test(parser, args):
         from ai_test.llm import analyze
         tty.msg(f"Generating test scenarios (model: {args.model})...")
         result = analyze(schema, model=args.model)
-        _print_test_scenarios(result)
+        _show_specs(result)
 
     if args.mape:
         from ai_test.mape import run

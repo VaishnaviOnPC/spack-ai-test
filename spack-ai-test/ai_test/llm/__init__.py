@@ -30,14 +30,14 @@ def _package_context(schema: PackageSchema) -> str:
 
 def _risk_context(schema: PackageSchema, dep_scores=None, compilers=None) -> str:
     if dep_scores is not None:
-        lines = ["Dependency risk scores (Priority = (1+U)x(1+M)x(1+C)x(1+P), max=16):"]
+        lines = ["Dependency risk scores (higher = more likely to break, max=16):"]
         for dep in sorted(dep_scores, key=lambda d: d.score, reverse=True):
             cond = f" [when: {dep.when}]" if dep.when else ""
             lines.append(f"  {dep.name}: {dep.score:.1f}{cond}")
         if compilers:
             lines.append(f"\nAvailable compilers: {', '.join(compilers)}")
         lines.append("\nFocus on variant combinations that activate the highest-scoring dependencies.")
-        lines.append("Version failures from deterministic sweep: not yet available (Stage 2 pending)")
+        lines.append("Version failures from deterministic sweep: not yet available")
         return "\n".join(lines)
 
     rs = schema.risk_signals
@@ -50,7 +50,7 @@ def _risk_context(schema: PackageSchema, dep_scores=None, compilers=None) -> str
         lines.append(f"- {rs.compiler_conflict_count} declared compiler conflicts — adjacent versions may have undeclared issues")
     if rs.virtual_provider_count:
         lines.append(f"- Virtual providers needed: {', '.join(schema.virtual_deps)}")
-    lines.append("\nVersion failures: not yet available (Stage 2 pending)")
+    lines.append("Version failures: not yet available")
     return "\n".join(lines)
 
 
@@ -83,10 +83,10 @@ def _parse(package: str, raw: str) -> LLMResponse:
 def analyze(schema: PackageSchema, model="claude-sonnet-4-6", dep_scores=None, compilers=None) -> LLMResponse:
     client = LLMClient(model=model)
     messages = build_messages(
-        package_context=_package_context(schema),
-        risk_context=_risk_context(schema, dep_scores, compilers),
-        reference_context="Reference packages: not yet available",
-        conflict_context=_conflict_context(schema),
+        _package_context(schema),
+        _risk_context(schema, dep_scores, compilers),
+        "Reference packages: not yet available",
+        _conflict_context(schema),
         compilers=compilers,
     )
     raw = client.ask(messages)

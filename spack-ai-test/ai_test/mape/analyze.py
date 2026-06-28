@@ -6,9 +6,8 @@ from ai_test.extract.schema import DependencyInfo, PackageSchema
 from ai_test.mape.schema import MapeContext, RiskDep
 
 
-# Compilers commonly used in HPC/CI environments.
-# Specs targeting these are queued for CI even if not installed locally.
-CURATED_CI_COMPILERS = [
+# compilers we want in CI even if they're not installed locally
+DEFAULT_CI_COMPILERS = [
     "gcc@11.4.0",
     "gcc@12.3.0",
     "clang@14.0.0",
@@ -20,7 +19,7 @@ CURATED_CI_COMPILERS = [
 def get_compilers() -> Tuple[List[str], List[str]]:
     result = subprocess.run(["spack", "compilers"], capture_output=True, text=True)
     installed = re.findall(r'\b\w+@[\d]+\.[\d.]+\b', result.stdout)
-    extras = [c for c in CURATED_CI_COMPILERS if c not in installed]
+    extras = [c for c in DEFAULT_CI_COMPILERS if c not in installed]
     return installed, installed + extras
 
 
@@ -57,24 +56,26 @@ def _major_version_span(dep_name: str) -> int:
 
 
 def score_dep(dep: DependencyInfo) -> float:
-    # Cold-start Priority(A -> B) = (1+U) x (1+M) x (1+C) x (1+P)  [max = 16]
-    U = 1 if _has_no_upper_bound(dep.bound) else 0
-    M = _major_version_span(dep.name)
-    C = 1 if _is_cxx_sensitive(dep) else 0
-    P = 1 if _is_virtual(dep.name) else 0
-    return float((1 + U) * (1 + M) * (1 + C) * (1 + P))
+    # priority score: (1+unbounded) * (1+multi_major) * (1+cxx) * (1+virtual), max=16
+    unbounded = 1 if _has_no_upper_bound(dep.bound) else 0
+    multi_major = _major_version_span(dep.name)
+    cxx = 1 if _is_cxx_sensitive(dep) else 0
+    virtual = 1 if _is_virtual(dep.name) else 0
+    return float((1 + unbounded) * (1 + multi_major) * (1 + cxx) * (1 + virtual))
 
 
 def analyze(context: MapeContext) -> Tuple[List[RiskDep], List[str], List[str]]:
     schema = context.package_schema
 
+    # deduplicate deps by name before scoring
     seen = {}
     for dep in schema.dependencies:
         seen.setdefault(dep.name, dep)
+
     risk_deps = sorted(
         [RiskDep(name=name, score=score_dep(dep), when=dep.when) for name, dep in seen.items()],
         key=lambda r: r.score,
         reverse=True,
     )
-    installed_compilers, all_compilers = get_compilers()
-    return risk_deps, installed_compilers, all_compilers
+    installed, all_compilers = get_compilers()
+    return risk_deps, installed, all_compilers
