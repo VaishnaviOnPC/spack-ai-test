@@ -1,4 +1,4 @@
-# spack-aitest
+# spack-ai-test
 
 A Spack extension that helps find undeclared compiler and variant compatibility issues. It uses a mix of deterministic checks and an LLM to generate test specs for edge cases that CI usually misses.
 
