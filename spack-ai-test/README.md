@@ -7,7 +7,7 @@ A Spack extension that helps find undeclared compiler and variant compatibility 
 Clone the repo wherever you keep your Spack extensions:
 
 ```bash
-git clone https://github.com/VaishnaviOnPC/spack-aitest /path/to/spack-aitest
+git clone https://github.com/VaishnaviOnPC/spack-ai-test /path/to/spack-ai-test
 ```
 
 Then register it in your `~/.spack/config.yaml`:
@@ -15,7 +15,7 @@ Then register it in your `~/.spack/config.yaml`:
 ```yaml
 config:
   extensions:
-  - /path/to/spack-aitest
+  - /path/to/spack-ai-test
 ```
 
 Verify it works:
