@@ -12,7 +12,7 @@ Only use variants and versions explicitly declared in the package schema.
 JSON output only, no prose, no markdown.\
 """
 
-def _task_prompt(compilers=None) -> str:
+def task_prompt(compilers=None) -> str:
     if compilers:
         compiler_constraint = f"Every spec MUST use one of these compilers: {', '.join('%' + c for c in compilers)}"
         example_compiler = "%" + compilers[0]
@@ -32,14 +32,13 @@ Output only:
 {{"test_scenarios": ["<pkg@version +var ~var {example_compiler}>", ...]}}"""
 
 
-def build_messages(pkg_ctx, risk_ctx, ref_ctx, conflict_ctx, compilers=None) -> list:
+def build_messages(pkg_ctx, risk_ctx, conflict_ctx, compilers=None) -> list:
     return [
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": pkg_ctx},
         {"role": "user", "content": risk_ctx},
-        {"role": "user", "content": ref_ctx},
         {"role": "user", "content": conflict_ctx},
-        {"role": "user", "content": _task_prompt(compilers)},
+        {"role": "user", "content": task_prompt(compilers)},
     ]
 
 

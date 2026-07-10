@@ -24,3 +24,5 @@ class CandidateSpec:
     spec_str: str
     concretized: bool
     failure_reason: Optional[str] = None
+    installed: bool = False
+    install_error: Optional[str] = None

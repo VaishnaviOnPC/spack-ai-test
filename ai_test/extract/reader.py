@@ -10,26 +10,24 @@ def get_pkg_class(pkg_name: str):
 def _dep_bound(dep_obj) -> str:
     if isinstance(dep_obj, dict):
         return dep_obj.get("versions", ":") or ":"
-    versions = getattr(dep_obj, "versions", None)
-    if versions is None:
-        spec = getattr(dep_obj, "spec", None)
-        if spec:
-            versions = getattr(spec, "versions", None)
-    if versions is not None:
+    versions = getattr(dep_obj, "versions", None) or getattr(
+        getattr(dep_obj, "spec", None), "versions", None
+    )
+    if versions:
         s = str(versions).lstrip("@")
         if s and s != ":":
             return s
     return ":"
 
 
-def _dep_type(dep_obj) -> List[str]:
+def _dep_type(dep_obj) -> list:
     if isinstance(dep_obj, dict):
-        dt = dep_obj.get("type", None)
+        dt = dep_obj.get("type")
     else:
         dt = getattr(dep_obj, "type", None)
     if dt is None:
         return ["build", "link"]
-    if isinstance(dt, (list, tuple, set, frozenset)):
+    if isinstance(dt, (set, frozenset)):
         return sorted(str(t) for t in dt)
     return [str(dt)]
 
@@ -48,7 +46,7 @@ def extract_versions(pkg_class) -> List[str]:
         str(v) for v, attrs in getattr(pkg_class, "versions", {}).items()
         if not attrs.get("deprecated", False)
     ]
-    return sorted((str(v) for v in raw), key=ver_key, reverse=True)
+    return sorted(raw, key=ver_key, reverse=True)
 
 
 def extract_dependencies(pkg_class) -> List[DependencyInfo]:

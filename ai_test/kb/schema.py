@@ -11,4 +11,6 @@ class KBEntry:
     pkg_hash: str
     timestamp: str
     repair_attempts: int = 0
-    validation_status: str = "validated"
+    validation_status: str = "validated"   # "validated" | "ci_queue"
+    installed: bool = False
+    install_error: Optional[str] = None

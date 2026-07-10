@@ -41,8 +41,18 @@ spack ai-test openmpi --generate
 # Run the full MAPE-K loop (analyze, generate, test, and save to knowledge base)
 spack ai-test openmpi --mape
 
+# Only use locally installed compilers (no CI queue entries)
+spack ai-test openmpi --mape --local
+
 # Specify a custom model and knowledge base path
 spack ai-test openmpi --mape --model gpt-4o --kb ./my_kb.json
+```
+
+You can also configure defaults in `~/.spack/ai_test.yaml`:
+```yaml
+ai_test:
+  model: gemini-2.5-flash
+  kb: ~/.spack/cache/ai_test/kb.json
 ```
 
 ## Structure

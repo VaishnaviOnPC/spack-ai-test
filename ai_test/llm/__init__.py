@@ -7,7 +7,7 @@ from ai_test.llm.prompt import build_messages
 from ai_test.llm.schema import LLMResponse
 
 
-def _package_context(schema: PackageSchema) -> str:
+def _pkg_summary(schema: PackageSchema) -> str:
     versions = schema.versions[:5]
     versions_str = ", ".join(versions)
     if len(schema.versions) > 5:
@@ -28,7 +28,7 @@ def _package_context(schema: PackageSchema) -> str:
     return "\n".join(lines)
 
 
-def _risk_context(schema: PackageSchema, dep_scores=None, compilers=None) -> str:
+def _risk_summary(schema: PackageSchema, dep_scores=None, compilers=None) -> str:
     if dep_scores is not None:
         lines = ["Dependency risk scores (higher = more likely to break, max=16):"]
         for dep in sorted(dep_scores, key=lambda d: d.score, reverse=True):
@@ -37,24 +37,22 @@ def _risk_context(schema: PackageSchema, dep_scores=None, compilers=None) -> str
         if compilers:
             lines.append(f"\nAvailable compilers: {', '.join(compilers)}")
         lines.append("\nFocus on variant combinations that activate the highest-scoring dependencies.")
-        lines.append("Version failures from deterministic sweep: not yet available")
         return "\n".join(lines)
 
     rs = schema.risk_signals
     lines = ["Structural signals (potential CI coverage gaps):"]
     if rs.cross_language_bindings:
-        lines.append("- Cross-language bindings — multi-toolchain combinations rarely tested together")
+        lines.append("- Cross-language bindings: multi-toolchain combinations rarely tested together")
     if rs.custom_build_system:
-        lines.append("- Custom build system — compiler flag handling may differ from standard packages")
+        lines.append("- Custom build system: compiler flag handling may differ from standard packages")
     if rs.compiler_conflict_count:
-        lines.append(f"- {rs.compiler_conflict_count} declared compiler conflicts — adjacent versions may have undeclared issues")
+        lines.append(f"- {rs.compiler_conflict_count} declared compiler conflicts: adjacent versions may have undeclared issues")
     if rs.virtual_provider_count:
         lines.append(f"- Virtual providers needed: {', '.join(schema.virtual_deps)}")
-    lines.append("Version failures: not yet available")
     return "\n".join(lines)
 
 
-def _conflict_context(schema: PackageSchema) -> str:
+def _conflicts(schema: PackageSchema) -> str:
     if not schema.declared_conflicts:
         return "Declared conflicts: none"
     lines = [f"Declared conflicts ({len(schema.declared_conflicts)}):"]
@@ -81,13 +79,10 @@ def _parse(package: str, raw: str) -> LLMResponse:
 
 
 def analyze(schema: PackageSchema, model="claude-sonnet-4-6", dep_scores=None, compilers=None) -> LLMResponse:
-    client = LLMClient(model=model)
     messages = build_messages(
-        _package_context(schema),
-        _risk_context(schema, dep_scores, compilers),
-        "Reference packages: not yet available",
-        _conflict_context(schema),
+        _pkg_summary(schema),
+        _risk_summary(schema, dep_scores, compilers),
+        _conflicts(schema),
         compilers=compilers,
     )
-    raw = client.ask(messages)
-    return _parse(schema.name, raw)
+    return _parse(schema.name, LLMClient(model=model).ask(messages))
