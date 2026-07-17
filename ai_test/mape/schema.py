@@ -8,7 +8,6 @@ from ai_test.kb.schema import KBEntry
 @dataclass
 class MapeContext:
     package_schema: PackageSchema
-    version_failures: List[str]
     kb_entries: List[KBEntry]
 
 

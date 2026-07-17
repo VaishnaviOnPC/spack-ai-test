@@ -3,6 +3,7 @@ import re
 from datetime import datetime
 
 import spack.concretize
+import spack.installer
 import spack.spec
 
 from ai_test.extract.schema import PackageSchema
@@ -20,13 +21,12 @@ def run_spec(spec_str: str) -> tuple:
 
 
 def run_install(spec_str: str) -> tuple:
-    import spack.installer
     try:
         spec = spack.concretize.concretize_one(spack.spec.Spec(spec_str))
         installer = spack.installer.PackageInstaller([spec.package])
         installer.install(fail_fast=True, no_cache=True)
         return True, None
-    except Exception as e:
+    except (Exception, SystemExit) as e:
         return False, str(e)
 
 
@@ -65,7 +65,6 @@ def _repair_spec(failed_spec, error, installed_compilers, model):
         "compiler_not_found": f"Compiler not found. Use only: {compiler_list}.",
         "unknown": "",
     }
-    hint = hints.get(category, "")
 
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
@@ -73,7 +72,7 @@ def _repair_spec(failed_spec, error, installed_compilers, model):
             "role": "user",
             "content": (
                 f"The spec '{failed_spec}' failed concretization:\n{err_summary}\n"
-                f"{hint}\n\n"
+                f"{hints.get(category, '')}\n\n"
                 f"Generate ONE corrected spec. Use only these compilers: {compiler_list}.\n"
                 f"Output only: {{\"test_scenarios\": [\"<corrected spec>\"]}}"
             ),
@@ -91,19 +90,19 @@ def _repair_spec(failed_spec, error, installed_compilers, model):
         return None
 
 
-def execute_all(specs, schema, kb_path, installed_compilers=None, model="claude-sonnet-4-6", build=False):
+def execute_all(specs, schema: PackageSchema, kb_path: str, installed_compilers=None, model="claude-haiku-4-5", build=False):
     existing = load_kb(kb_path)
     results = []
 
     for spec_str in specs:
         if is_known(existing, schema.name, spec_str, schema.sha256):
-            print(f"  [~] {spec_str}  (already in KB, skipping)")
+            print(f"[~] {spec_str}  (already in KB, skipping)")
             results.append(CandidateSpec(spec_str=spec_str, concretized=True))
             continue
 
         compiler = _spec_compiler(spec_str)
-        if compiler and compiler not in installed_compilers:
-            print(f"  [>] {spec_str} (CI queue: {compiler} not installed locally)")
+        if compiler and installed_compilers is not None and compiler not in installed_compilers:
+            print(f"[>] {spec_str} (CI queue: {compiler} not installed locally)")
             entry = KBEntry(
                 pkg_name=schema.name,
                 spec=spec_str,
@@ -129,14 +128,13 @@ def execute_all(specs, schema, kb_path, installed_compilers=None, model="claude-
 
         installed, install_error = False, None
         if passed and build:
-            print(f"  [*] {spec_str} (installing...)")
+            print(f"[*] {spec_str} (installing...)")
             installed, install_error = run_install(spec_str)
 
-        status = "✓✓" if installed else ("✓" if passed else "✗")
-        print(f"  [{status}] {spec_str}")
+        status = "INSTALLED" if installed else ("PASS" if passed else "FAIL")
+        print(f"[{status}] {spec_str}")
         if error or install_error:
-            first_line = (install_error or error).splitlines()[0]
-            print(f"       {first_line}")
+            print(f"{(install_error or error).splitlines()[0]}")
 
         entry = KBEntry(
             pkg_name=schema.name,

@@ -40,10 +40,3 @@ def build_messages(pkg_ctx, risk_ctx, conflict_ctx, compilers=None) -> list:
         {"role": "user", "content": conflict_ctx},
         {"role": "user", "content": task_prompt(compilers)},
     ]
-
-
-def repair_message(spec: str, error: str) -> dict:
-    return {
-        "role": "user",
-        "content": f"Spec '{spec}' failed: {error}\nGenerate a corrected spec. JSON only.",
-    }

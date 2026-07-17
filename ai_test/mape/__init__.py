@@ -5,53 +5,43 @@ from ai_test.mape.plan import call_llm
 
 
 def run(pkg_name: str, kb_path: str, model: str = "claude-haiku-4-5", build: bool = False, local: bool = False, compiler: str = None):
-    print()
-    print("--- Monitor ---")
     context = load_context(pkg_name, kb_path)
     schema = context.package_schema
-    print(f"Package: {schema.name} (known KB entries: {len(context.kb_entries)})")
-
-    print()
-    print("--- Analyze ---")
-    risk_deps, installed_compilers, all_compilers, f_rate = analyze_deps(context)
+    risk_deps, installed_compilers, all_compilers, failure_rate = analyze_deps(context)
 
     validated = [e for e in context.kb_entries if e.validation_status == "validated"]
     if validated:
         failed_count = sum(1 for e in validated if not e.concretized)
-        print(f"Package failure rate (KB): {f_rate:.2f} ({failed_count}/{len(validated)} validated)")
-
-    for dep in risk_deps:
-        cond = f"  [when: {dep.when}]" if dep.when else ""
-        print(f"  {dep.name}: {dep.score:.1f}{cond}")
-    print(f"Installed compilers: {', '.join(installed_compilers) or 'none'}")
-    if not installed_compilers:
-        print("  (hint: run 'spack compiler find' to register compilers)")
-    if compiler:
-        compilers_for_plan = [compiler]
-        print(f"Compiler override: {compiler}")
-    elif local:
-        compilers_for_plan = installed_compilers
-        print("Using local compilers only (--local)")
+        rate_str = f"failure rate: {failure_rate:.2f} ({failed_count}/{len(validated)})"
     else:
-        compilers_for_plan = all_compilers
-        print(f"CI compiler set: {', '.join(all_compilers)}")
+        rate_str = "no KB history"
 
-    print()
-    print("--- Plan ---")
-    print("Querying LLM...")
-    llm_result = call_llm(schema, risk_deps, compilers_for_plan, context.kb_entries, model)
+    if compiler:
+        compiler_str = f"compiler: {compiler}"
+        compilers_for_plan = [compiler]
+    elif local:
+        compiler_str = "local compilers only"
+        compilers_for_plan = installed_compilers
+    else:
+        compiler_str = f"{len(all_compilers)} compilers"
+        compilers_for_plan = all_compilers
+
+    print(f"\n{schema.name} | KB: {len(context.kb_entries)} entries | {rate_str} | {compiler_str}")
+
+    if not installed_compilers:
+        print("(hint: run 'spack compiler find' to register compilers)")
+
+    print(f"Generating specs via {model}...")
+    llm_result = call_llm(schema, risk_deps, compilers_for_plan, context.kb_entries, model, kb_path=kb_path)
 
     if not llm_result.suggested_specs:
         print("LLM did not return parseable specs.")
         print(llm_result.raw)
         return
 
-    print(f"  Generated {len(llm_result.suggested_specs)} candidate specs.")
-
-    print()
-    print("--- Execute ---")
     if build:
-        print("  (--build enabled: concretized specs will also run spack install)")
+        print("(--build: concretized specs will also run spack install)")
+
     results = execute_all(
         llm_result.suggested_specs,
         schema,
@@ -66,14 +56,11 @@ def run(pkg_name: str, kb_path: str, model: str = "claude-haiku-4-5", build: boo
     passed = [r for r in results if r.concretized]
     built = [r for r in results if r.installed]
 
-    print()
-    print("--- Results ---")
-    print(f"Validated locally: {len(passed) + len(failed)}")
-    print(f"  Concretized: {len(passed)}")
+    # One-line summary at the end.
+    parts = [f"{len(passed) + len(failed)} tested", f"{len(passed)} concretized", f"{len(failed)} failed"]
     if build:
-        print(f"  Built: {len(built)}")
-    print(f"  Failed: {len(failed)}")
+        parts.append(f"{len(built)} built")
     if ci:
         ci_needed = [c for c in all_compilers if c not in installed_compilers]
-        print(f"CI queue: {len(ci)}  (needs: {', '.join(ci_needed)})")
-    print(f"Results saved to: {kb_path}")
+        parts.append(f"{len(ci)} queued for CI ({', '.join(ci_needed)})")
+    print(f"\n{' | '.join(parts)}  ->  {kb_path}")

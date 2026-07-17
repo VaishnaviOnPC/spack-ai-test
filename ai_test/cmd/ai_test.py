@@ -106,7 +106,7 @@ def ai_test(parser, args):
     if args.json:
         import json
         print(json.dumps(schema.to_dict(), indent=2))
-    else:
+    elif not args.mape:
         print_schema(schema, output_path=output_path)
 
     if args.generate:

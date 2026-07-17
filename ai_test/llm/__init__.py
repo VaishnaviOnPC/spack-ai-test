@@ -78,7 +78,7 @@ def _parse(package: str, raw: str) -> LLMResponse:
     return LLMResponse(package=package, risk_level="unknown", concerns=[], suggested_specs=specs, raw=raw)
 
 
-def analyze(schema: PackageSchema, model="claude-sonnet-4-6", dep_scores=None, compilers=None) -> LLMResponse:
+def analyze(schema: PackageSchema, model="claude-haiku-4-5", dep_scores=None, compilers=None) -> LLMResponse:
     messages = build_messages(
         _pkg_summary(schema),
         _risk_summary(schema, dep_scores, compilers),
