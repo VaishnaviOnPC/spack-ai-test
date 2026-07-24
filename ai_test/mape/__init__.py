@@ -4,7 +4,7 @@ from ai_test.mape.monitor import load_context
 from ai_test.mape.plan import call_llm
 
 
-def run(pkg_name: str, kb_path: str, model: str = "claude-haiku-4-5", build: bool = False, local: bool = False, compiler: str = None):
+def run(pkg_name: str, kb_path: str, model: str = "claude-haiku-4-5", build: bool = False, local: bool = False, compiler: str = None, retrieval: bool = True):
     context = load_context(pkg_name, kb_path)
     schema = context.package_schema
     risk_deps, installed_compilers, all_compilers, failure_rate = analyze_deps(context)
@@ -26,13 +26,14 @@ def run(pkg_name: str, kb_path: str, model: str = "claude-haiku-4-5", build: boo
         compiler_str = f"{len(all_compilers)} compilers"
         compilers_for_plan = all_compilers
 
-    print(f"\n{schema.name} | KB: {len(context.kb_entries)} entries | {rate_str} | {compiler_str}")
+    retrieval_str = "" if retrieval else " | no retrieval"
+    print(f"\n{schema.name} | KB: {len(context.kb_entries)} entries | {rate_str} | {compiler_str}{retrieval_str}")
 
     if not installed_compilers:
         print("(hint: run 'spack compiler find' to register compilers)")
 
     print(f"Generating specs via {model}...")
-    llm_result = call_llm(schema, risk_deps, compilers_for_plan, context.kb_entries, model, kb_path=kb_path)
+    llm_result = call_llm(schema, risk_deps, compilers_for_plan, context.kb_entries, model, kb_path=kb_path, retrieval=retrieval)
 
     if not llm_result.suggested_specs:
         print("LLM did not return parseable specs.")

@@ -1,7 +1,6 @@
 import spack.store
 
 from ai_test.extract.schema import PackageSchema
-from ai_test.kb.store import load as load_kb
 from ai_test.llm import _pkg_summary, _risk_summary, _conflicts, _parse
 from ai_test.llm.client import LLMClient
 from ai_test.llm.prompt import SYSTEM_PROMPT, task_prompt
@@ -26,6 +25,8 @@ def _similar_pkgs_ctx(schema: PackageSchema) -> str:
 
 
 def _similar_kb_ctx(schema: PackageSchema, kb_path: str) -> str:
+    from ai_test.kb.store import load as load_kb
+
     similar = find_similar(schema, top_n=3)
     if not similar:
         return ""
@@ -106,9 +107,10 @@ def call_llm(
     kb_entries: list,
     model: str,
     kb_path: str = None,
+    retrieval: bool = True,
 ) -> LLMResponse:
-    similar_syntax = _similar_pkgs_ctx(schema)
-    similar_kb = _similar_kb_ctx(schema, kb_path) if kb_path else ""
+    similar_syntax = _similar_pkgs_ctx(schema) if retrieval else ""
+    similar_kb = _similar_kb_ctx(schema, kb_path) if (retrieval and kb_path) else ""
     installed = _installed_ctx(schema)
     kb = _kb_ctx(schema, kb_entries)
 

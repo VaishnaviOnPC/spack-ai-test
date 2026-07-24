@@ -133,8 +133,6 @@ def execute_all(specs, schema: PackageSchema, kb_path: str, installed_compilers=
 
         status = "INSTALLED" if installed else ("PASS" if passed else "FAIL")
         print(f"[{status}] {spec_str}")
-        if error or install_error:
-            print(f"{(install_error or error).splitlines()[0]}")
 
         entry = KBEntry(
             pkg_name=schema.name,

@@ -68,6 +68,11 @@ def setup_parser(subparser):
             "Gemini (GEMINI_API_KEY): gemini-2.5-pro, gemini-2.5-flash."
         ),
     )
+    subparser.add_argument(
+        "--no-retrieval",
+        action="store_true",
+        help="with --mape: skip TF-IDF cross-package retrieval (faster, but LLM has no structural examples)",
+    )
 
 
 def _show_specs(result):
@@ -117,4 +122,12 @@ def ai_test(parser, args):
 
     if args.mape:
         from ai_test.mape import run
-        run(pkg_name, kb_path=args.kb, model=args.model, build=args.build, local=args.local, compiler=spec_compiler)
+        run(
+            pkg_name,
+            kb_path=args.kb,
+            model=args.model,
+            build=args.build,
+            local=args.local,
+            compiler=spec_compiler,
+            retrieval=not args.no_retrieval,
+        )
