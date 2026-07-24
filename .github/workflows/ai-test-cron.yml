@@ -31,10 +31,12 @@ jobs:
 
       - name: Set up Spack and register extension
         run: |
+          mkdir -p ~/.spack
+          echo "config:" > ~/.spack/config.yaml
+          echo "  extensions:" >> ~/.spack/config.yaml
+          echo "  - $(pwd)/extension" >> ~/.spack/config.yaml
           . spack/share/spack/setup-env.sh
           echo "$(pwd)/spack/bin" >> $GITHUB_PATH
-          mkdir -p ~/.spack
-          printf 'config:\n  extensions:\n  - %s/extension\n' "$(pwd)" > ~/.spack/config.yaml
           spack compiler find
 
       - name: Restore Knowledge Base Cache
@@ -47,8 +49,6 @@ jobs:
 
       - name: Run AI-test sweep
         run: |
-          . spack/share/spack/setup-env.sh
-
           for pkg in zlib hdf5 boost; do
             echo "==> ai-test: $pkg"
             spack ai-test "$pkg" --mape
