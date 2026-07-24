@@ -8,17 +8,17 @@ on:
 jobs:
   ai-test-sweep:
     runs-on: ubuntu-latest
-    
+
     env:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
     steps:
-      - name: Checkout spack-ai-test extension
+      - name: Checkout spack-ai-test
         uses: actions/checkout@v4
         with:
           path: extension
 
-      - name: Checkout Spack main repository
+      - name: Checkout Spack
         uses: actions/checkout@v4
         with:
           repository: spack/spack
@@ -29,35 +29,36 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install Spack and Extension
+      - name: Set up Spack and register extension
         run: |
           . spack/share/spack/setup-env.sh
-          spack extensions add ./extension
+          echo "$(pwd)/spack/bin" >> $GITHUB_PATH
+          mkdir -p ~/.spack
+          printf 'config:\n  extensions:\n  - %s/extension\n' "$(pwd)" > ~/.spack/config.yaml
           spack compiler find
 
       - name: Restore Knowledge Base Cache
         uses: actions/cache@v4
         with:
-          path: ~/.spack/ai_test/kb.json
+          path: ${{ env.HOME }}/.spack/ai_test/kb.json
           key: ai-test-kb-${{ runner.os }}-${{ github.run_id }}
           restore-keys: |
             ai-test-kb-${{ runner.os }}-
 
-      - name: Run MAPE-K Loop
+      - name: Run AI-test sweep
         run: |
           . spack/share/spack/setup-env.sh
-          
-          PACKAGES=("zlib" "hdf5" "boost")
-          
-          for pkg in "${PACKAGES[@]}"; do
-            echo "Running AI test for $pkg..."
+
+          for pkg in zlib hdf5 boost; do
+            echo "==> ai-test: $pkg"
             spack ai-test "$pkg" --mape
           done
 
-      - name: Upload KB as Artifact
+      - name: Upload Knowledge Base
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ai-test-knowledge-base
-          path: ~/.spack/ai_test/kb.json
+          path: ${{ env.HOME }}/.spack/ai_test/kb.json
+          if-no-files-found: warn
           retention-days: 30
