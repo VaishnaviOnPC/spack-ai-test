@@ -35,7 +35,7 @@ class LLMClient:
 
         payload = json.dumps({
             "model": self.model,
-            "max_tokens": 512,
+            "max_tokens": 2048,
             "system": system,
             "messages": msgs,
         }).encode()
