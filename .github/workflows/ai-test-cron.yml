@@ -1,0 +1,63 @@
+name: Spack AI-Test
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+
+jobs:
+  ai-test-sweep:
+    runs-on: ubuntu-latest
+    
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+    steps:
+      - name: Checkout spack-ai-test extension
+        uses: actions/checkout@v4
+        with:
+          path: extension
+
+      - name: Checkout Spack main repository
+        uses: actions/checkout@v4
+        with:
+          repository: spack/spack
+          path: spack
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Spack and Extension
+        run: |
+          . spack/share/spack/setup-env.sh
+          spack extensions add ./extension
+          spack compiler find
+
+      - name: Restore Knowledge Base Cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.spack/ai_test/kb.json
+          key: ai-test-kb-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            ai-test-kb-${{ runner.os }}-
+
+      - name: Run MAPE-K Loop
+        run: |
+          . spack/share/spack/setup-env.sh
+          
+          PACKAGES=("zlib" "hdf5" "boost")
+          
+          for pkg in "${PACKAGES[@]}"; do
+            echo "Running AI test for $pkg..."
+            spack ai-test "$pkg" --mape
+          done
+
+      - name: Upload KB as Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-test-knowledge-base
+          path: ~/.spack/ai_test/kb.json
+          retention-days: 30
