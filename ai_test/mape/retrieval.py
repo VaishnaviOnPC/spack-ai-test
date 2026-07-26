@@ -1,146 +1,166 @@
-import glob
-import math
-import os
-import pickle
 import re
-
-import spack.paths
 import spack.repo
-
-_DEP_RE = re.compile(r"""depends_on\s*\(\s*["']([^"'@\s,]+)""")
-_CLASS_RE = re.compile(r'class\s+\w+\((\w+)\)')
-_CACHE_FILE = os.path.join(spack.paths.user_cache_path, "ai_test", "pkg_index.pkl")
-
-# tokens that appear in nearly every package and add no signal
-_STOP = {
-    "dep", "var", "buildsys", "build", "link", "run", "name",
-    "true", "false", "package", "unknown", "none", "when", "type",
-}
+from ai_test.extract.schema import PackageSchema
 
 
-def _scan_packages() -> dict:
-    pkgs = {}
-    for repo in spack.repo.PATH.repos:
-        pkg_dir = getattr(repo, "packages_path", None)
-        if not pkg_dir or not os.path.isdir(pkg_dir):
-            continue
-        for path in glob.glob(os.path.join(pkg_dir, "**", "package.py"), recursive=True):
-            name = os.path.basename(os.path.dirname(path))
-            try:
-                src = open(path, encoding="utf-8", errors="ignore").read()
-                deps = list(set(_DEP_RE.findall(src)))
-                m = _CLASS_RE.search(src)
-                bsys = m.group(1).lower().replace("package", "") if m else "generic"
-                pkgs[name] = {"deps": deps, "build_sys": bsys, "path": path}
-            except Exception:
-                continue
-    return pkgs
+def _versions_for(dep_name: str) -> list:
+    try:
+        pkg_class = spack.repo.PATH.get_pkg_class(dep_name)
+        raw = list(getattr(pkg_class, "versions", {}).keys())
+        return sorted(raw, key=lambda v: [int(x) for x in str(v).split(".") if x.isdigit()])
+    except Exception:
+        return []
 
 
-def _pkg_card(name: str, info: dict) -> str:
-    deps_str = " ".join(f"dep:{d}" for d in sorted(info["deps"]))
-    return f"name:{name} buildsys:{info['build_sys']} {deps_str}"
+def _parse_min(bound: str) -> str:
+    if not bound or bound in (":", ""):
+        return None
+    return bound.lstrip("@").split(":")[0] or None
 
 
-def _schema_card(schema) -> str:
-    by_type = {}
+def _major(version_str: str) -> int:
+    parts = str(version_str).split(".")
+    return int(parts[0]) if parts and parts[0].isdigit() else -1
+
+
+def _is_open(bound: str) -> bool:
+    if not bound or bound == ":":
+        return True
+    parts = bound.split(":")
+    return len(parts) == 2 and parts[1] == ""
+
+
+def _ge(v: str, minimum: str) -> bool:
+    def parts(s):
+        return [int(x) for x in s.split(".") if x.isdigit()]
+    return parts(v) >= parts(minimum)
+
+
+def compute_gaps(schema: PackageSchema) -> list:
+    results = []
+    seen = set()
+
     for dep in schema.dependencies:
-        for t in (dep.dep_type or ["build"]):
-            by_type.setdefault(t.lower(), []).append(dep.name)
+        if dep.name in seen:
+            continue
+        seen.add(dep.name)
 
-    deps_str = " ".join(
-        f"dep_{t}:" + ",".join(sorted(set(names)))
-        for t, names in sorted(by_type.items())
-    )
-    bs_var = schema.variants.get("build_system")
-    bs = f"buildsys:{bs_var.default}" if bs_var else "buildsys:generic"
-    return f"name:{schema.name} {bs} {deps_str}"
+        if not _is_open(dep.bound):
+            continue
+        if spack.repo.PATH.is_virtual(dep.name):
+            continue
 
+        versions = _versions_for(dep.name)
+        if not versions:
+            continue
 
-def _tokenize(card: str) -> list:
-    tokens = re.findall(r'[a-z0-9_\-]+', card.lower())
-    return [t for t in tokens if t not in _STOP and len(t) > 1]
+        min_str = _parse_min(dep.bound)
+        latest_str = str(versions[-1])
+        above = [v for v in versions if _ge(str(v), min_str)] if min_str else versions
 
+        if not above:
+            continue
 
-def _idf(token_lists: list) -> dict:
-    N = len(token_lists)
-    df = {}
-    for toks in token_lists:
-        for t in set(toks):
-            df[t] = df.get(t, 0) + 1
-    return {t: math.log(N / cnt) for t, cnt in df.items()}
+        min_major = _major(min_str) if min_str else _major(str(above[0]))
+        crossings = []
+        seen_majors = set()
+        for v in above:
+            m = _major(str(v))
+            if m > min_major and m not in seen_majors:
+                seen_majors.add(m)
+                crossings.append(str(v))
 
+        results.append({
+            "dep": dep.name,
+            "min_declared": min_str or str(versions[0]),
+            "latest": latest_str,
+            "gap_count": len(above),
+            "major_crossings": crossings,
+        })
 
-def _cosine(qtoks: list, dtoks: list, weights: dict) -> float:
-    qtf = {}
-    for t in qtoks:
-        qtf[t] = qtf.get(t, 0) + 1
-    dtf = {}
-    for t in dtoks:
-        dtf[t] = dtf.get(t, 0) + 1
-
-    qn = len(qtoks) or 1
-    dn = len(dtoks) or 1
-
-    dot = sum(
-        (qtf[t] / qn) * weights.get(t, 0) * (dtf[t] / dn) * weights.get(t, 0)
-        for t in qtf if t in dtf
-    )
-    qmag = math.sqrt(sum(((c / qn) * weights.get(t, 0)) ** 2 for t, c in qtf.items()))
-    dmag = math.sqrt(sum(((c / dn) * weights.get(t, 0)) ** 2 for t, c in dtf.items()))
-    return dot / (qmag * dmag) if qmag and dmag else 0.0
+    return sorted(results, key=lambda x: (len(x["major_crossings"]), x["gap_count"]), reverse=True)
 
 
-_index = None
-
-
-def _load_index() -> dict:
-    global _index
-    if _index is not None:
-        return _index
-
-    if os.path.exists(_CACHE_FILE):
-        with open(_CACHE_FILE, "rb") as f:
-            _index = pickle.load(f)
-        return _index
-
-    print("Building package index (first run, takes ~10s)...")
-    pkgs = _scan_packages()
-    tok_index = {name: _tokenize(_pkg_card(name, info)) for name, info in pkgs.items()}
-    weights = _idf(list(tok_index.values()))
-
-    _index = {"pkgs": pkgs, "tokens": tok_index, "idf": weights}
-    os.makedirs(os.path.dirname(_CACHE_FILE), exist_ok=True)
-    with open(_CACHE_FILE, "wb") as f:
-        pickle.dump(_index, f)
-    return _index
-
-
-def find_similar(schema, top_n=2) -> list:
-    idx = _load_index()
-    weights = idx["idf"]
-    tok_index = idx["tokens"]
-
-    qtoks = _tokenize(_schema_card(schema))
-    scores = {
-        name: _cosine(qtoks, toks, weights)
-        for name, toks in tok_index.items()
-        if name != schema.name
-    }
-    return sorted(scores.items(), key=lambda x: x[1], reverse=True)[:top_n]
-
-
-def get_chunks(pkg_name: str) -> str:
-    idx = _load_index()
-    info = idx["pkgs"].get(pkg_name)
-    if not info:
+def gap_context(schema: PackageSchema) -> str:
+    entries = [e for e in compute_gaps(schema) if e["major_crossings"]]
+    if not entries:
         return ""
-    src = open(info["path"], encoding="utf-8", errors="ignore").read()
-    chunks = []
-    for line in src.splitlines():
-        stripped = line.strip()
-        if stripped.startswith(("depends_on(", "variant(", "conflicts(")):
-            chunks.append("  " + stripped)
-        if len(chunks) >= 15:
-            break
-    return "\n".join(chunks)
+
+    lines = [
+        f"Dependency version gaps for {schema.name} (open upper bounds only):",
+    ]
+    for e in entries[:5]:
+        crossing_note = f" [major boundaries: {', '.join(e['major_crossings'])}]"
+        lines.append(f"  {e['dep']}: @{e['min_declared']} to latest {e['latest']}{crossing_note}")
+        lines.append(f"    floor pin: ^{e['dep']}@{e['min_declared']}")
+
+    lines.append(
+        "Use these floor pins in ^dep@version specs and also generate specs "
+        "where these deps are left unpinned (they will resolve to their latest version)."
+    )
+    return "\n".join(lines)
+
+
+def _parse_features(spec: str) -> set:
+    features = set()
+    for m in re.finditer(r'([+~])(\w+)', spec):
+        features.add(f"{m.group(1)}{m.group(2)}")
+    for m in re.finditer(r'(\w+)=(\w+)', spec):
+        if m.group(1) not in ("arch", "os", "target"):
+            features.add(f"{m.group(1)}={m.group(2)}")
+    for m in re.finditer(r'\^([\w\-]+)@([\d\.]+)', spec):
+        features.add(f"^{m.group(1)}@{m.group(2)}")
+    return features
+
+
+def kb_patterns(kb_entries: list) -> str:
+    validated = [e for e in kb_entries if e.validation_status == "validated"]
+    if len(validated) < 4:
+        return ""
+
+    failed = [e for e in validated if not e.concretized]
+    passed = [e for e in validated if e.concretized]
+    if not failed or not passed:
+        return ""
+
+    overall_fail_rate = len(failed) / len(validated)
+
+    fail_counts = {}
+    for e in failed:
+        for feat in _parse_features(e.spec):
+            fail_counts[feat] = fail_counts.get(feat, 0) + 1
+
+    pass_counts = {}
+    for e in passed:
+        for feat in _parse_features(e.spec):
+            pass_counts[feat] = pass_counts.get(feat, 0) + 1
+
+    risky, safe = [], []
+    all_features = set(fail_counts) | set(pass_counts)
+    for feat in all_features:
+        fc = fail_counts.get(feat, 0)
+        pc = pass_counts.get(feat, 0)
+        total = fc + pc
+        if total < 2:
+            continue
+        feat_fail_rate = fc / total
+        if feat_fail_rate > 0.85 and feat_fail_rate > overall_fail_rate:
+            risky.append((feat, fc, total, feat_fail_rate))
+        elif feat_fail_rate < 0.35 and pc >= 2:
+            safe.append((feat, pc, total))
+
+    if not risky and not safe:
+        return ""
+
+    lines = ["Empirical failure patterns from KB history:"]
+    if risky:
+        risky.sort(key=lambda x: x[3], reverse=True)
+        lines.append("  High failure rate — prioritise testing these combinations:")
+        for feat, fc, total, rate in risky[:5]:
+            lines.append(f"    {feat}  ({fc}/{total} specs failed)")
+    if safe:
+        safe.sort(key=lambda x: x[1], reverse=True)
+        lines.append("  Low failure rate — well-tested, de-prioritise:")
+        for feat, pc, total in safe[:3]:
+            lines.append(f"    {feat}  ({pc}/{total} specs passed)")
+    return "\n".join(lines)

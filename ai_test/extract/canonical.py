@@ -14,8 +14,3 @@ def write_canonical(schema: PackageSchema, output_path: str) -> str:
     with open(output_path, "w") as f:
         json.dump(d, f, indent=2, sort_keys=True)
     return sha
-
-
-def read_canonical(path: str) -> PackageSchema:
-    with open(path) as f:
-        return PackageSchema.from_dict(json.load(f))

@@ -69,13 +69,13 @@ def _parse(package: str, raw: str) -> LLMResponse:
     try:
         data = json.loads(cleaned)
     except json.JSONDecodeError:
-        return LLMResponse(package=package, risk_level="unknown", concerns=[], suggested_specs=[], raw=raw)
+        return LLMResponse(package=package, suggested_specs=[], raw=raw)
     scenarios = data.get("test_scenarios", [])
     if scenarios and isinstance(scenarios[0], dict):
         specs = [s["spec"] for s in scenarios if "spec" in s]
     else:
         specs = [str(s) for s in scenarios]
-    return LLMResponse(package=package, risk_level="unknown", concerns=[], suggested_specs=specs, raw=raw)
+    return LLMResponse(package=package, suggested_specs=specs, raw=raw)
 
 
 def analyze(schema: PackageSchema, model="claude-haiku-4-5", dep_scores=None, compilers=None) -> LLMResponse:

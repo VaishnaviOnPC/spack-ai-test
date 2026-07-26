@@ -3,7 +3,6 @@ from ai_test.config import get as get_config
 from ai_test.extract.schema import DependencyInfo
 from ai_test.mape.schema import MapeContext, RiskDep
 
-# Compilers commonly used in HPC/CI environments.
 _DEFAULT_CI_COMPILERS = [
     "gcc@11.4.0",
     "gcc@12.3.0",
@@ -12,7 +11,6 @@ _DEFAULT_CI_COMPILERS = [
     "intel@2024.0.0",
 ]
 
-# Weight applied to the historical failure rate when amplifying risk scores.
 ALPHA = 2.0
 
 
@@ -45,14 +43,19 @@ def _is_cxx_sensitive(dep: DependencyInfo) -> bool:
     return dep.name == "cxx" or "cxx" in (dep.dep_type or [])
 
 
-def _major_version_span(dep_name: str) -> int:
+def _major_crossings(dep_name: str, bound: str) -> int:
+    if not _has_no_upper_bound(bound):
+        return 0
     if spack.repo.PATH.is_virtual(dep_name):
         return 0
     try:
         pkg_class = spack.repo.PATH.get_pkg_class(dep_name)
         versions = list(getattr(pkg_class, "versions", {}).keys())
-        majors = {int(str(v).split(".")[0]) for v in versions if str(v).split(".")[0].isdigit()}
-        return 1 if len(majors) > 1 else 0
+        min_str = bound.lstrip("@").split(":")[0] if bound else ""
+        min_major = int(min_str.split(".")[0]) if min_str and min_str.split(".")[0].isdigit() else 0
+        above = {int(str(v).split(".")[0]) for v in versions
+                 if str(v).split(".")[0].isdigit() and int(str(v).split(".")[0]) > min_major}
+        return len(above)
     except Exception:
         return 0
 
@@ -66,9 +69,10 @@ def _failure_rate(kb_entries) -> float:
 
 
 def score_dep(dep: DependencyInfo, failure_rate: float = 0.0) -> float:
+    crossings = _major_crossings(dep.name, dep.bound)
     structural = (
         (2 if _has_no_upper_bound(dep.bound) else 1)
-        * (2 if _major_version_span(dep.name) else 1)
+        * (1 + min(crossings, 3))
         * (2 if _is_cxx_sensitive(dep) else 1)
         * (2 if _is_virtual(dep.name) else 1)
     )

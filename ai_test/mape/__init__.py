@@ -33,7 +33,7 @@ def run(pkg_name: str, kb_path: str, model: str = "claude-haiku-4-5", build: boo
         print("(hint: run 'spack compiler find' to register compilers)")
 
     print(f"Generating specs via {model}...")
-    llm_result = call_llm(schema, risk_deps, compilers_for_plan, context.kb_entries, model, kb_path=kb_path, retrieval=retrieval)
+    llm_result = call_llm(schema, risk_deps, compilers_for_plan, context.kb_entries, model, retrieval=retrieval)
 
     if not llm_result.suggested_specs:
         print("LLM did not return parseable specs.")
@@ -57,11 +57,10 @@ def run(pkg_name: str, kb_path: str, model: str = "claude-haiku-4-5", build: boo
     passed = [r for r in results if r.concretized]
     built = [r for r in results if r.installed]
 
-    # One-line summary at the end.
     parts = [f"{len(passed) + len(failed)} tested", f"{len(passed)} concretized", f"{len(failed)} failed"]
     if build:
         parts.append(f"{len(built)} built")
     if ci:
         ci_needed = [c for c in all_compilers if c not in installed_compilers]
         parts.append(f"{len(ci)} queued for CI ({', '.join(ci_needed)})")
-    print(f"\n{' | '.join(parts)}  ->  {kb_path}")
+    print(f"\n{' | '.join(parts)} : {kb_path}")

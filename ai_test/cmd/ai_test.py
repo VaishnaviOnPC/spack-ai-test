@@ -71,7 +71,8 @@ def setup_parser(subparser):
     subparser.add_argument(
         "--no-retrieval",
         action="store_true",
-        help="with --mape: skip TF-IDF cross-package retrieval (faster, but LLM has no structural examples)",
+        default=False,
+        help="skip retrieval augmentation (version gap analysis and KB pattern analysis)",
     )
 
 
@@ -97,7 +98,6 @@ def ai_test(parser, args):
     from ai_test.extract import extract
     from ai_test.printer import print_schema
 
-    # strip @version and %compiler if user passes a full spec string like zlib%gcc@13.3.0
     pkg_name = args.package.split("%")[0].split("@")[0].strip()
     spec_compiler = args.package.split("%", 1)[1].strip() if "%" in args.package else None
     output_path = None

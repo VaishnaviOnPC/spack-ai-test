@@ -32,6 +32,8 @@ def run_install(spec_str: str) -> tuple:
 
 def _error_type(error: str) -> str:
     e = error.lower()
+    if "no such variant" in e or "unknown variant" in e or "invalid variant" in e:
+        return "unknown_variant"
     if "cannot satisfy" in e or "conflicts with" in e:
         return "constraint_conflict"
     if "no version" in e or "version range" in e:
@@ -48,12 +50,57 @@ def _spec_compiler(spec_str: str):
     return m.group(1).lstrip("%=") if m else None
 
 
+def _validate_spec(spec_str: str, schema: PackageSchema) -> list:
+    issues = []
+    _SKIP_NAMES = {"arch", "os", "target", "platform"}
+
+    root = spec_str.split('^')[0].split('%')[0]
+    tokens = root.split()[1:]
+
+    for tok in tokens:
+        m = re.match(r'^[+~](\w+)$', tok)
+        if m:
+            name = m.group(1)
+            if name not in schema.variants:
+                issues.append(f"unknown variant '{name}'")
+            continue
+        m = re.match(r'^(\w+)=(\S+)', tok)
+        if m:
+            name, value = m.group(1), m.group(2)
+            if name in _SKIP_NAMES:
+                continue
+            if name not in schema.variants:
+                issues.append(f"unknown variant '{name}'")
+            elif schema.variants[name].values is not None:
+                if value not in schema.variants[name].values:
+                    issues.append(f"invalid value '{name}={value}' (declared: {schema.variants[name].values})")
+
+    import spack.repo
+    for dep_tok in re.finditer(r'\^([\w\-]+)(@[\d][^\s^%]*)?(%\S+)?', spec_str):
+        dep_name = dep_tok.group(1)
+
+        if dep_tok.group(3):
+            issues.append(f"dep spec '^{dep_name}' has a compiler suffix '{dep_tok.group(3)}' which is not valid syntax")
+
+        if dep_tok.group(2):
+            ver_str = dep_tok.group(2).lstrip('@')
+            try:
+                pkg_class = spack.repo.PATH.get_pkg_class(dep_name)
+                known = {str(v) for v in getattr(pkg_class, 'versions', {}).keys()}
+                if ver_str not in known:
+                    issues.append(f"dep version '^{dep_name}@{ver_str}' does not exist in Spack registry")
+            except Exception:
+                pass
+                
+    return issues
+
+
 def _repair_spec(failed_spec, error, installed_compilers, model):
     from ai_test.llm.client import LLMClient
     from ai_test.llm.prompt import SYSTEM_PROMPT
 
     category = _error_type(error)
-    if category == "constraint_conflict":
+    if category in ("constraint_conflict", "unknown_variant"):
         return None
 
     compiler_list = ", ".join("%" + c for c in installed_compilers)
@@ -98,6 +145,11 @@ def execute_all(specs, schema: PackageSchema, kb_path: str, installed_compilers=
         if is_known(existing, schema.name, spec_str, schema.sha256):
             print(f"[~] {spec_str}  (already in KB, skipping)")
             results.append(CandidateSpec(spec_str=spec_str, concretized=True))
+            continue
+
+        issues = _validate_spec(spec_str, schema)
+        if issues:
+            print(f"[SKIP] {spec_str}  ({issues[0]})")
             continue
 
         compiler = _spec_compiler(spec_str)

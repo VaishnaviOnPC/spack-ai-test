@@ -1,6 +1,6 @@
 from typing import Optional
 
-from ai_test.extract.schema import PackageSchema, RiskSignals, VariantInfo, DependencyInfo
+from ai_test.extract.schema import PackageSchema
 from ai_test.extract.reader import (
     get_pkg_class,
     extract_versions,
@@ -9,7 +9,7 @@ from ai_test.extract.reader import (
     extract_conflicts,
 )
 from ai_test.extract.signals import compute_signals, virtual_dependencies
-from ai_test.extract.canonical import write_canonical, read_canonical
+from ai_test.extract.canonical import write_canonical
 
 
 def extract(pkg_name: str, output_path: Optional[str] = None) -> PackageSchema:
