@@ -10,6 +10,7 @@ CI focuses on the newest versions with newest dependencies, target everything el
 - Use your knowledge of each dependency's oldest stable release for realistic floor versions
 - Cross compiler, ABI or major compiler version boundaries
 - Only use variants and versions explicitly declared in the package schema
+- If a variant has allowed [values: ...], you MUST pick one of those exact values
 - JSON output only, no prose, no markdown\
 """
 

@@ -20,6 +20,8 @@ def _pkg_summary(schema: PackageSchema) -> str:
     ]
     for name, v in sorted(schema.variants.items()):
         line = f"  {name} (default={v.default})"
+        if v.values:
+            line += f" [values: {', '.join(str(val) for val in v.values)}]"
         if v.description:
             line += f": {v.description}"
         if v.when:

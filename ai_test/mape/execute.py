@@ -1,5 +1,8 @@
+import os
+import sys
 import json
 import re
+from contextlib import contextmanager
 from datetime import datetime
 
 import spack.concretize
@@ -12,9 +15,29 @@ from ai_test.kb.store import append_entry, is_known, load as load_kb
 from ai_test.mape.schema import CandidateSpec
 
 
+@contextmanager
+def suppress_clingo_warnings():
+    sys.stderr.flush()
+    try:
+        devnull = os.open(os.devnull, os.O_WRONLY)
+        old_stderr = os.dup(2)
+        os.dup2(devnull, 2)
+    except Exception:
+        yield
+        return
+    try:
+        yield
+    finally:
+        sys.stderr.flush()
+        os.dup2(old_stderr, 2)
+        os.close(old_stderr)
+        os.close(devnull)
+
+
 def run_spec(spec_str: str) -> tuple:
     try:
-        spack.concretize.concretize_one(spack.spec.Spec(spec_str))
+        with suppress_clingo_warnings():
+            spack.concretize.concretize_one(spack.spec.Spec(spec_str))
         return True, None
     except (Exception, SystemExit) as e:
         return False, str(e)
@@ -22,9 +45,15 @@ def run_spec(spec_str: str) -> tuple:
 
 def run_install(spec_str: str) -> tuple:
     try:
-        spec = spack.concretize.concretize_one(spack.spec.Spec(spec_str))
-        installer = spack.installer.PackageInstaller([spec.package])
-        installer.install(fail_fast=True, no_cache=True)
+        with suppress_clingo_warnings():
+            spec = spack.concretize.concretize_one(spack.spec.Spec(spec_str))
+        installer = spack.installer.PackageInstaller(
+            [spec.package],
+            fail_fast=True,
+            root_policy="source_only",
+            dependencies_policy="source_only"
+        )
+        installer.install()
         return True, None
     except (Exception, SystemExit) as e:
         return False, str(e)
@@ -183,8 +212,16 @@ def execute_all(specs, schema: PackageSchema, kb_path: str, installed_compilers=
             print(f"[*] {spec_str} (installing...)")
             installed, install_error = run_install(spec_str)
 
-        status = "INSTALLED" if installed else ("PASS" if passed else "FAIL")
+        if build and passed:
+            status = "INSTALLED" if installed else "BUILD_FAIL"
+        else:
+            status = "PASS" if passed else "FAIL"
+
         print(f"[{status}] {spec_str}")
+        if status == "BUILD_FAIL" and install_error:
+            # Print just the first line of the install error to avoid clutter
+            err_line = install_error.strip().split("\n")[0]
+            print(f"       -> {err_line}")
 
         entry = KBEntry(
             pkg_name=schema.name,
