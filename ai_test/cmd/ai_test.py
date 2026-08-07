@@ -1,6 +1,5 @@
 import os
 import sys
-from spack.llnl.util import tty
 
 _ext_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if _ext_root not in sys.path:
@@ -120,7 +119,7 @@ def ai_test(parser, args):
         score_spec(args.score, kb_path=args.kb)
         return
 
-    tty.msg(f"spack ai-test: extracting metadata for '{pkg_name}'...")
+    print(f"spack ai-test: extracting metadata for '{pkg_name}'...")
     schema = extract(pkg_name, output_path=output_path)
 
     if args.json:
@@ -131,7 +130,7 @@ def ai_test(parser, args):
 
     if args.generate:
         from ai_test.llm import analyze
-        tty.msg(f"Generating test scenarios (model: {args.model})...")
+        print(f"Generating test scenarios (model: {args.model})...")
         result = analyze(schema, model=args.model)
         _show_specs(result)
 
