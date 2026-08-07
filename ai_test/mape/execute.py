@@ -8,28 +8,48 @@ from datetime import datetime
 import spack.concretize
 import spack.installer
 import spack.spec
+import spack.store
 
 from ai_test.extract.schema import PackageSchema
 from ai_test.kb.schema import KBEntry
 from ai_test.kb.store import append_entry, is_known, load as load_kb
 from ai_test.mape.schema import CandidateSpec
 
+_SKIP_VARIANT_NAMES = {"arch", "os", "target", "platform"}
+
 
 @contextmanager
 def suppress_clingo_warnings():
     sys.stderr.flush()
-    try:
-        devnull = os.open(os.devnull, os.O_WRONLY)
-        old_stderr = os.dup(2)
-        os.dup2(devnull, 2)
-    except Exception:
-        yield
-        return
+    devnull = os.open(os.devnull, os.O_WRONLY)
+    old_stderr = os.dup(2)
+    os.dup2(devnull, 2)
     try:
         yield
     finally:
         sys.stderr.flush()
         os.dup2(old_stderr, 2)
+        os.close(old_stderr)
+        os.close(devnull)
+
+
+@contextmanager
+def suppress_output():
+    sys.stdout.flush()
+    sys.stderr.flush()
+    devnull = os.open(os.devnull, os.O_WRONLY)
+    old_stdout = os.dup(1)
+    old_stderr = os.dup(2)
+    os.dup2(devnull, 1)
+    os.dup2(devnull, 2)
+    try:
+        yield
+    finally:
+        sys.stdout.flush()
+        sys.stderr.flush()
+        os.dup2(old_stdout, 1)
+        os.dup2(old_stderr, 2)
+        os.close(old_stdout)
         os.close(old_stderr)
         os.close(devnull)
 
@@ -53,10 +73,50 @@ def run_install(spec_str: str) -> tuple:
             root_policy="source_only",
             dependencies_policy="source_only"
         )
-        installer.install()
+        with suppress_output():
+            installer.install()
         return True, None
     except (Exception, SystemExit) as e:
         return False, str(e)
+
+
+def run_test(spec_str: str) -> tuple:
+    installed = spack.store.STORE.db.query(spec_str)
+    if not installed:
+        return None, "not installed"
+
+    spec = installed[0]
+    pkg = spec.package
+
+    test_methods = [
+        name for name in dir(type(pkg))
+        if name.startswith("test_") and callable(getattr(type(pkg), name, None))
+    ]
+    if not test_methods:
+        return None, "no tests defined"
+
+    try:
+        import subprocess
+        result = subprocess.run(
+            ["spack", "test", "run", "--fail-fast", spec_str],
+            capture_output=True,
+            text=True
+        )
+        if result.returncode != 0:
+            output = result.stdout + "\n" + result.stderr
+            lines = [l.strip() for l in output.splitlines() if l.strip()]
+            error_lines = [
+                l for l in lines 
+                if ("fail" in l.lower() or "error" in l.lower()) and not l.startswith("=====")
+            ]
+            summary = error_lines[0] if error_lines else (lines[-1] if lines else "test suite failed")
+            return False, summary
+        return True, None
+    except Exception as e:
+        err = str(e)
+        if "test" in err.lower() and "fail" in err.lower():
+            return False, err.splitlines()[0]
+        return False, err
 
 
 def _error_type(error: str) -> str:
@@ -81,22 +141,31 @@ def _spec_compiler(spec_str: str):
 
 def _validate_spec(spec_str: str, schema: PackageSchema) -> list:
     issues = []
-    _SKIP_NAMES = {"arch", "os", "target", "platform"}
-
     root = spec_str.split('^')[0].split('%')[0]
+
+    root_ver_m = re.match(r'^\S+@([\d][^\s+~^%]*)', root.strip())
+    if root_ver_m:
+        root_ver = root_ver_m.group(1)
+        import spack.repo
+        pkg_class = spack.repo.PATH.get_pkg_class(schema.name)
+        known_root = {str(v) for v in getattr(pkg_class, 'versions', {}).keys()}
+        if root_ver not in known_root:
+            issues.append(
+                f"root version '@{root_ver}' does not exist in Spack registry for {schema.name}"
+            )
+
     tokens = root.split()[1:]
 
     for tok in tokens:
         m = re.match(r'^[+~](\w+)$', tok)
         if m:
-            name = m.group(1)
-            if name not in schema.variants:
-                issues.append(f"unknown variant '{name}'")
+            if m.group(1) not in schema.variants:
+                issues.append(f"unknown variant '{m.group(1)}'")
             continue
         m = re.match(r'^(\w+)=(\S+)', tok)
         if m:
             name, value = m.group(1), m.group(2)
-            if name in _SKIP_NAMES:
+            if name in _SKIP_VARIANT_NAMES:
                 continue
             if name not in schema.variants:
                 issues.append(f"unknown variant '{name}'")
@@ -104,7 +173,8 @@ def _validate_spec(spec_str: str, schema: PackageSchema) -> list:
                 if value not in schema.variants[name].values:
                     issues.append(f"invalid value '{name}={value}' (declared: {schema.variants[name].values})")
 
-    import spack.repo
+    from ai_test.config import BUILD_TOOLS
+
     for dep_tok in re.finditer(r'\^([\w\-]+)(@[\d][^\s^%]*)?(%\S+)?', spec_str):
         dep_name = dep_tok.group(1)
 
@@ -112,15 +182,19 @@ def _validate_spec(spec_str: str, schema: PackageSchema) -> list:
             issues.append(f"dep spec '^{dep_name}' has a compiler suffix '{dep_tok.group(3)}' which is not valid syntax")
 
         if dep_tok.group(2):
+            if dep_name in BUILD_TOOLS:
+                issues.append(f"invalid test axis: pinning build tool '^{dep_name}' is not allowed")
+                continue
+
             ver_str = dep_tok.group(2).lstrip('@')
             try:
                 pkg_class = spack.repo.PATH.get_pkg_class(dep_name)
-                known = {str(v) for v in getattr(pkg_class, 'versions', {}).keys()}
+                versions_dict = getattr(pkg_class, 'versions', {})
+                known = {str(v) for v, args in versions_dict.items() if not args.get('deprecated', False)}
                 if ver_str not in known:
-                    issues.append(f"dep version '^{dep_name}@{ver_str}' does not exist in Spack registry")
-            except Exception:
+                    issues.append(f"dep version '^{dep_name}@{ver_str}' does not exist or is deprecated in Spack registry")
+            except spack.repo.UnknownPackageError:
                 pass
-                
     return issues
 
 
@@ -155,8 +229,7 @@ def _repair_spec(failed_spec, error, installed_compilers, model):
         },
     ]
 
-    client = LLMClient(model=model)
-    raw = client.ask(messages)
+    raw = LLMClient(model=model).ask(messages)
     cleaned = re.sub(r"```json|```", "", raw).strip()
     try:
         data = json.loads(cleaned)
@@ -166,11 +239,18 @@ def _repair_spec(failed_spec, error, installed_compilers, model):
         return None
 
 
-def execute_all(specs, schema: PackageSchema, kb_path: str, installed_compilers=None, model="claude-haiku-4-5", build=False):
+def execute_all(specs, schema: PackageSchema, kb_path: str, installed_compilers=None, model="claude-haiku-4-5", build=False, test=False):
     existing = load_kb(kb_path)
     results = []
 
+    seen_this_run = set()
+
     for spec_str in specs:
+        if spec_str in seen_this_run:
+            print(f"[~] {spec_str}  (duplicate in this run, skipping)")
+            continue
+        seen_this_run.add(spec_str)
+
         if is_known(existing, schema.name, spec_str, schema.sha256):
             print(f"[~] {spec_str}  (already in KB, skipping)")
             results.append(CandidateSpec(spec_str=spec_str, concretized=True))
@@ -208,20 +288,33 @@ def execute_all(specs, schema: PackageSchema, kb_path: str, installed_compilers=
                 spec_str = repaired
 
         installed, install_error = False, None
-        if passed and build:
+        test_passed, test_error = None, None
+
+        if passed and (build or test):
             print(f"[*] {spec_str} (installing...)")
             installed, install_error = run_install(spec_str)
 
-        if build and passed:
-            status = "INSTALLED" if installed else "BUILD_FAIL"
+        if installed and test:
+            test_passed, test_error = run_test(spec_str)
+
+        if test_passed is True:
+            status = "TEST_PASS"
+        elif test_passed is False:
+            status = "TEST_FAIL"
+        elif installed:
+            status = "INSTALLED"
+        elif build and passed:
+            status = "BUILD_FAIL"
+        elif passed:
+            status = "PASS"
         else:
-            status = "PASS" if passed else "FAIL"
+            status = "FAIL"
 
         print(f"[{status}] {spec_str}")
         if status == "BUILD_FAIL" and install_error:
-            # Print just the first line of the install error to avoid clutter
-            err_line = install_error.strip().split("\n")[0]
-            print(f"       -> {err_line}")
+            print(f"       {install_error.strip().splitlines()[0]}")
+        if status == "TEST_FAIL" and test_error:
+            print(f"       {test_error.strip().splitlines()[0]}")
 
         entry = KBEntry(
             pkg_name=schema.name,
@@ -234,6 +327,8 @@ def execute_all(specs, schema: PackageSchema, kb_path: str, installed_compilers=
             validation_status="validated",
             installed=installed,
             install_error=install_error,
+            test_passed=test_passed,
+            test_error=test_error,
         )
         append_entry(kb_path, entry)
         results.append(CandidateSpec(
@@ -242,6 +337,8 @@ def execute_all(specs, schema: PackageSchema, kb_path: str, installed_compilers=
             failure_reason=error,
             installed=installed,
             install_error=install_error,
+            test_passed=test_passed,
+            test_error=test_error,
         ))
 
     return results

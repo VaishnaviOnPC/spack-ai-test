@@ -77,10 +77,10 @@ def extract_conflicts(pkg_class) -> List[Dict[str, str]]:
 
 def _parse_variant(vdef, pkg_when):
     if isinstance(vdef, dict):
-        default = vdef.get("default", None)
+        default = vdef.get("default")
         desc = str(vdef.get("description", "") or "")
-        when = vdef.get("when", None) or pkg_when
-        raw_values = vdef.get("values", None)
+        when = vdef.get("when") or pkg_when
+        raw_values = vdef.get("values")
     else:
         default = getattr(vdef, "default", None)
         desc = str(getattr(vdef, "description", "") or "")

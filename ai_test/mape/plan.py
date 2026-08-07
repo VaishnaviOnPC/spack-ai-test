@@ -3,9 +3,9 @@ import spack.store
 from ai_test.extract.schema import PackageSchema
 from ai_test.llm import _pkg_summary, _risk_summary, _conflicts, _parse
 from ai_test.llm.client import LLMClient
-from ai_test.llm.prompt import SYSTEM_PROMPT, task_prompt
+from ai_test.llm.prompt import get_system_prompt, task_prompt
 from ai_test.llm.schema import LLMResponse
-from ai_test.mape.retrieval import gap_context, kb_patterns
+from ai_test.mape.retrieval import gap_context, kb_patterns, valid_dep_versions_context
 
 
 def _installed_ctx(schema: PackageSchema) -> str:
@@ -54,17 +54,21 @@ def call_llm(
     kb_entries: list,
     model: str,
     retrieval: bool = True,
+    auto_patterns: list = None,
 ) -> LLMResponse:
     dep_gap = gap_context(schema) if retrieval else ""
+    dep_versions = valid_dep_versions_context(schema) if retrieval else ""
     kb_pattern = kb_patterns(kb_entries) if retrieval else ""
     installed = _installed_ctx(schema)
     kb = _kb_ctx(schema, kb_entries)
 
     messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "system", "content": get_system_prompt(auto_patterns=auto_patterns)},
         {"role": "user", "content": _pkg_summary(schema)},
         {"role": "user", "content": _risk_summary(schema, risk_deps, all_compilers)},
     ]
+    if dep_versions:
+        messages.append({"role": "user", "content": dep_versions})
     if dep_gap:
         messages.append({"role": "user", "content": dep_gap})
     if kb_pattern:

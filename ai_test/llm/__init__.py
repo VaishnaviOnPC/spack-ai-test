@@ -8,8 +8,7 @@ from ai_test.llm.schema import LLMResponse
 
 
 def _pkg_summary(schema: PackageSchema) -> str:
-    versions = schema.versions[:5]
-    versions_str = ", ".join(versions)
+    versions_str = ", ".join(schema.versions[:5])
     if len(schema.versions) > 5:
         versions_str += f" (+{len(schema.versions) - 5} more)"
 
@@ -62,7 +61,7 @@ def _conflicts(schema: PackageSchema) -> str:
         for spec, when in entry.items():
             lines.append(f"  conflicts({spec!r}, when={when!r})")
     if len(schema.declared_conflicts) > 15:
-        lines.append(f"  ... ({len(schema.declared_conflicts) - 15} more)")
+        lines.append(f"  (+{len(schema.declared_conflicts) - 15} more)")
     return "\n".join(lines)
 
 

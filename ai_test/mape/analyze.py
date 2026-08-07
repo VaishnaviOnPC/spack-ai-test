@@ -3,19 +3,10 @@ from ai_test.config import get as get_config
 from ai_test.extract.schema import DependencyInfo
 from ai_test.mape.schema import MapeContext, RiskDep
 
-_DEFAULT_CI_COMPILERS = [
-    "gcc@11.4.0",
-    "gcc@12.3.0",
-    "clang@14.0.0",
-    "clang@15.0.7",
-    "intel@2024.0.0",
-]
-
 ALPHA = 2.0
 
 
 def get_compilers():
-    installed = []
     try:
         import spack.compilers.config as cc
         installed = [c.format("{name}@{version}") for c in cc.all_compilers()]
@@ -23,7 +14,7 @@ def get_compilers():
         import spack.config
         entries = spack.config.get("compilers") or []
         installed = [e["compiler"]["spec"] for e in entries if "compiler" in e]
-    ci_compilers = get_config().get("ci_compilers", _DEFAULT_CI_COMPILERS)
+    ci_compilers = get_config().get("ci_compilers", [])
     extras = [c for c in ci_compilers if c not in installed]
     return installed, installed + extras
 
@@ -33,10 +24,6 @@ def _has_no_upper_bound(bound: str) -> bool:
         return True
     parts = bound.split(":")
     return len(parts) == 2 and parts[1] == ""
-
-
-def _is_virtual(name: str) -> bool:
-    return spack.repo.PATH.is_virtual(name)
 
 
 def _is_cxx_sensitive(dep: DependencyInfo) -> bool:
@@ -56,7 +43,7 @@ def _major_crossings(dep_name: str, bound: str) -> int:
         above = {int(str(v).split(".")[0]) for v in versions
                  if str(v).split(".")[0].isdigit() and int(str(v).split(".")[0]) > min_major}
         return len(above)
-    except Exception:
+    except spack.repo.UnknownPackageError:
         return 0
 
 
@@ -68,15 +55,31 @@ def _failure_rate(kb_entries) -> float:
     return failed / len(validated)
 
 
-def score_dep(dep: DependencyInfo, failure_rate: float = 0.0) -> float:
+def score_dep(dep: DependencyInfo, failure_rate: float = 0.0):
     crossings = _major_crossings(dep.name, dep.bound)
+    is_unbound = _has_no_upper_bound(dep.bound)
+    is_cxx = _is_cxx_sensitive(dep)
+    is_virt = spack.repo.PATH.is_virtual(dep.name)
+
     structural = (
-        (2 if _has_no_upper_bound(dep.bound) else 1)
+        (2 if is_unbound else 1)
         * (1 + min(crossings, 3))
-        * (2 if _is_cxx_sensitive(dep) else 1)
-        * (2 if _is_virtual(dep.name) else 1)
+        * (2 if is_cxx else 1)
+        * (2 if is_virt else 1)
     )
-    return (1 + ALPHA * failure_rate) * structural
+    score = (1 + ALPHA * failure_rate) * structural
+
+    notes = []
+    if is_unbound:
+        notes.append("no upper bound")
+    if crossings > 0:
+        notes.append(f"{crossings} major crossing{'s' if crossings > 1 else ''}")
+    if is_virt:
+        notes.append("virtual")
+    if is_cxx:
+        notes.append("C++ ABI")
+
+    return score, notes
 
 
 def analyze(context: MapeContext):
@@ -87,10 +90,11 @@ def analyze(context: MapeContext):
     for dep in schema.dependencies:
         seen.setdefault(dep.name, dep)
 
-    risk_deps = sorted(
-        [RiskDep(name=name, score=score_dep(dep, failure_rate), when=dep.when) for name, dep in seen.items()],
-        key=lambda r: r.score,
-        reverse=True,
-    )
+    risk_list = []
+    for name, dep in seen.items():
+        s, n = score_dep(dep, failure_rate)
+        risk_list.append(RiskDep(name=name, score=s, when=dep.when, notes=n))
+    risk_deps = sorted(risk_list, key=lambda r: r.score, reverse=True)
+
     installed, all_compilers = get_compilers()
     return risk_deps, installed, all_compilers, failure_rate

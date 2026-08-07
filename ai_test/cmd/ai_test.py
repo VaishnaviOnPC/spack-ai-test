@@ -53,6 +53,11 @@ def setup_parser(subparser):
         help="with --mape: also run spack install on concretized specs to catch compilation failures",
     )
     subparser.add_argument(
+        "--test",
+        action="store_true",
+        help="with --mape: install and run spack test to catch functional/regression failures (implies --build)",
+    )
+    subparser.add_argument(
         "--local",
         action="store_true",
         help="with --mape: only generate specs using locally installed compilers (no CI queue entries)",
@@ -71,8 +76,13 @@ def setup_parser(subparser):
     subparser.add_argument(
         "--no-retrieval",
         action="store_true",
-        default=False,
         help="skip retrieval augmentation (version gap analysis and KB pattern analysis)",
+    )
+    subparser.add_argument(
+        "--score",
+        default=None,
+        metavar="SPEC",
+        help="compute and display a risk score for a user-provided spec string (e.g. 'openmpi@4.1.6 +rocm %%gcc@13.3.0')",
     )
 
 
@@ -105,6 +115,11 @@ def ai_test(parser, args):
         os.makedirs(args.output_dir, exist_ok=True)
         output_path = os.path.join(args.output_dir, "canonical.json")
 
+    if args.score:
+        from ai_test.mape import score_spec
+        score_spec(args.score, kb_path=args.kb)
+        return
+
     tty.msg(f"spack ai-test: extracting metadata for '{pkg_name}'...")
     schema = extract(pkg_name, output_path=output_path)
 
@@ -112,7 +127,7 @@ def ai_test(parser, args):
         import json
         print(json.dumps(schema.to_dict(), indent=2))
     elif not args.mape:
-        print_schema(schema, output_path=output_path)
+        print_schema(schema)
 
     if args.generate:
         from ai_test.llm import analyze
@@ -126,7 +141,8 @@ def ai_test(parser, args):
             pkg_name,
             kb_path=args.kb,
             model=args.model,
-            build=args.build,
+            build=args.build or args.test,
+            test=args.test,
             local=args.local,
             compiler=spec_compiler,
             retrieval=not args.no_retrieval,

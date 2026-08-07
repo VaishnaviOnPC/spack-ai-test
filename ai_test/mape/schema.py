@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Optional
 
 from ai_test.extract.schema import PackageSchema
@@ -16,6 +16,7 @@ class RiskDep:
     name: str
     score: float
     when: Optional[str]
+    notes: List[str] = field(default_factory=list)
 
 
 @dataclass
@@ -25,3 +26,5 @@ class CandidateSpec:
     failure_reason: Optional[str] = None
     installed: bool = False
     install_error: Optional[str] = None
+    test_passed: Optional[bool] = None
+    test_error: Optional[str] = None

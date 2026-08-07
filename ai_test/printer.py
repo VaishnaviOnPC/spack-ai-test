@@ -6,7 +6,7 @@ def _yn(value):
     return "Yes" if value else "No"
 
 
-def print_schema(schema: PackageSchema, output_path: Optional[str] = None):
+def print_schema(schema: PackageSchema):
     print()
     print("Package: " + schema.name)
 

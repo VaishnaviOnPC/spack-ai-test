@@ -14,3 +14,5 @@ class KBEntry:
     validation_status: str = "validated"   # "validated" | "ci_queue"
     installed: bool = False
     install_error: Optional[str] = None
+    test_passed: Optional[bool] = None
+    test_error: Optional[str] = None

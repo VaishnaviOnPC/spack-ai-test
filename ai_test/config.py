@@ -15,6 +15,12 @@ _DEFAULTS = {
     ],
 }
 
+BUILD_TOOLS = frozenset({
+    "py-pip", "py-setuptools", "py-wheel", "py-cython", "py-flit-core",
+    "py-meson-python", "py-hatchling", "py-poetry-core",
+    "ninja", "pkgconfig", "cmake", "autoconf", "automake", "libtool",
+})
+
 _ENV = {
     "SPACK_AI_TEST_MODEL": "model",
     "SPACK_AI_TEST_KB": "kb",
