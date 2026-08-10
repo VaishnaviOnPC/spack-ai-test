@@ -38,7 +38,18 @@ def setup_parser(subparser):
     subparser.add_argument(
         "--mape",
         action="store_true",
-        help="run the full MAPE-K loop: analyze dep risk, generate specs, validate with concretizer, save to KB",
+        help="run the full MAPE-K loop: generate specs via LLM, validate with concretizer, save to KB",
+    )
+    subparser.add_argument(
+        "--plan-only",
+        action="store_true",
+        help="(login-node) generate specs via LLM and queue them as 'pending' in the KB; no build/test",
+    )
+    subparser.add_argument(
+        "--execute-queued",
+        action="store_true",
+        dest="execute_queued",
+        help="(compute-node, offline) process all 'pending' KB specs: concretize, build, test; no internet needed",
     )
     subparser.add_argument(
         "--kb",
@@ -81,7 +92,13 @@ def setup_parser(subparser):
         "--score",
         default=None,
         metavar="SPEC",
-        help="compute and display a risk score for a user-provided spec string (e.g. 'openmpi@4.1.6 +rocm %%gcc@13.3.0')",
+        help="compute and display a risk score for a user-provided spec string",
+    )
+    subparser.add_argument(
+        "--bisect",
+        action="store_true",
+        help="with --mape or --execute-queued: automatically find the failure version range "
+             "(first-bad to last-bad) via bidirectional binary search whenever a build or test fails",
     )
 
 
@@ -125,7 +142,7 @@ def ai_test(parser, args):
     if args.json:
         import json
         print(json.dumps(schema.to_dict(), indent=2))
-    elif not args.mape:
+    elif not args.mape and not args.plan_only and not args.execute_queued:
         print_schema(schema)
 
     if args.generate:
@@ -134,7 +151,7 @@ def ai_test(parser, args):
         result = analyze(schema, model=args.model)
         _show_specs(result)
 
-    if args.mape:
+    if args.mape or args.plan_only:
         from ai_test.mape import run
         run(
             pkg_name,
@@ -145,4 +162,16 @@ def ai_test(parser, args):
             local=args.local,
             compiler=spec_compiler,
             retrieval=not args.no_retrieval,
+            plan_only=args.plan_only,
+            bisect=args.bisect,
+        )
+
+    if args.execute_queued:
+        from ai_test.mape import run_queued
+        run_queued(
+            pkg_name,
+            kb_path=args.kb,
+            build=args.build or args.test,
+            test=args.test,
+            bisect=args.bisect,
         )

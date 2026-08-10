@@ -9,10 +9,11 @@ import spack.concretize
 import spack.installer
 import spack.spec
 import spack.store
+import spack.repo
 
 from ai_test.extract.schema import PackageSchema
 from ai_test.kb.schema import KBEntry
-from ai_test.kb.store import append_entry, is_known, load as load_kb
+from ai_test.kb.store import append_entry, is_known, load as load_kb, replace_entry
 from ai_test.mape.schema import CandidateSpec
 
 _SKIP_VARIANT_NAMES = {"arch", "os", "target", "platform"}
@@ -146,7 +147,6 @@ def _validate_spec(spec_str: str, schema: PackageSchema) -> list:
     root_ver_m = re.match(r'^\S+@([\d][^\s+~^%]*)', root.strip())
     if root_ver_m:
         root_ver = root_ver_m.group(1)
-        import spack.repo
         pkg_class = spack.repo.PATH.get_pkg_class(schema.name)
         known_root = {str(v) for v in getattr(pkg_class, 'versions', {}).keys()}
         if root_ver not in known_root:
@@ -239,7 +239,7 @@ def _repair_spec(failed_spec, error, installed_compilers, model):
         return None
 
 
-def execute_all(specs, schema: PackageSchema, kb_path: str, installed_compilers=None, model="claude-haiku-4-5", build=False, test=False):
+def execute_all(specs, schema: PackageSchema, kb_path: str, installed_compilers=None, model="claude-haiku-4-5", build=False, test=False, bisect=False):
     existing = load_kb(kb_path)
     results = []
 
@@ -247,12 +247,12 @@ def execute_all(specs, schema: PackageSchema, kb_path: str, installed_compilers=
 
     for spec_str in specs:
         if spec_str in seen_this_run:
-            print(f"[~] {spec_str}  (duplicate in this run, skipping)")
+            print(f"[DUPLICATE] {spec_str}  (duplicate in this run, skipping)")
             continue
         seen_this_run.add(spec_str)
 
         if is_known(existing, schema.name, spec_str, schema.sha256):
-            print(f"[~] {spec_str}  (already in KB, skipping)")
+            print(f"[KNOWN] {spec_str}  (already in KB, skipping)")
             results.append(CandidateSpec(spec_str=spec_str, concretized=True))
             continue
 
@@ -263,7 +263,7 @@ def execute_all(specs, schema: PackageSchema, kb_path: str, installed_compilers=
 
         compiler = _spec_compiler(spec_str)
         if compiler and installed_compilers is not None and compiler not in installed_compilers:
-            print(f"[>] {spec_str} (CI queue: {compiler} not installed locally)")
+            print(f"[CI QUEUE] {spec_str} (CI queue: {compiler} not installed locally)")
             entry = KBEntry(
                 pkg_name=schema.name,
                 spec=spec_str,
@@ -340,5 +340,146 @@ def execute_all(specs, schema: PackageSchema, kb_path: str, installed_compilers=
             test_passed=test_passed,
             test_error=test_error,
         ))
+
+        if bisect and status in ("BUILD_FAIL", "TEST_FAIL"):
+            from ai_test.mape.bisect import auto_bisect_range
+            auto_bisect_range(
+                schema.name, spec_str,
+                test=(status == "TEST_FAIL"),
+                kb_path=kb_path,
+            )
+
+    return results
+
+def execute_queued(
+    pkg_name: str,
+    kb_path: str,
+    build: bool = False,
+    test: bool = False,
+    bisect: bool = False,
+) -> list:
+    from ai_test.extract import extract
+
+    all_entries = load_kb(kb_path)
+    pending = [
+        e for e in all_entries
+        if e.pkg_name == pkg_name and e.validation_status == "pending"
+    ]
+
+    if not pending:
+        print(f"No pending specs found for '{pkg_name}' in {kb_path}")
+        return []
+
+    schema = extract(pkg_name)
+
+    print(f"\n{pkg_name} | {len(pending)} pending specs | offline execution")
+    if build or test:
+        action = "build+test" if test else "build"
+        print(f"Mode: concretize + {action}")
+    else:
+        print("Mode: concretize only")
+
+    results = []
+    for entry in pending:
+        spec_str = entry.spec
+
+        issues = _validate_spec(spec_str, schema)
+        if issues:
+            print(f"[SKIP] {spec_str}  ({issues[0]})")
+            updated = KBEntry(
+                pkg_name=entry.pkg_name,
+                spec=spec_str,
+                concretized=False,
+                failure_reason=f"pre-validation: {issues[0]}",
+                pkg_hash=entry.pkg_hash,
+                timestamp=datetime.now().isoformat(),
+                validation_status="validated",
+            )
+            replace_entry(kb_path, updated)
+            results.append(CandidateSpec(
+                spec_str=spec_str,
+                concretized=False,
+                failure_reason=updated.failure_reason,
+            ))
+            continue
+
+        passed, error = run_spec(spec_str)
+
+        installed, install_error = False, None
+        test_passed, test_error = None, None
+
+        if passed and (build or test):
+            print(f"[*] {spec_str} (installing...)")
+            installed, install_error = run_install(spec_str)
+
+        if installed and test:
+            test_passed, test_error = run_test(spec_str)
+
+        if test_passed is True:
+            status = "TEST_PASS"
+        elif test_passed is False:
+            status = "TEST_FAIL"
+        elif installed:
+            status = "INSTALLED"
+        elif build and passed:
+            status = "BUILD_FAIL"
+        elif passed:
+            status = "PASS"
+        else:
+            status = "FAIL"
+
+        print(f"[{status}] {spec_str}")
+        if status == "BUILD_FAIL" and install_error:
+            print(f"       {install_error.strip().splitlines()[0]}")
+        if status == "TEST_FAIL" and test_error:
+            print(f"       {test_error.strip().splitlines()[0]}")
+
+        updated = KBEntry(
+            pkg_name=entry.pkg_name,
+            spec=spec_str,
+            concretized=passed,
+            failure_reason=error,
+            pkg_hash=entry.pkg_hash,
+            timestamp=datetime.now().isoformat(),
+            repair_attempts=entry.repair_attempts,
+            validation_status="validated",
+            installed=installed,
+            install_error=install_error,
+            test_passed=test_passed,
+            test_error=test_error,
+        )
+        replace_entry(kb_path, updated)
+        results.append(CandidateSpec(
+            spec_str=spec_str,
+            concretized=passed,
+            failure_reason=error,
+            installed=installed,
+            install_error=install_error,
+            test_passed=test_passed,
+            test_error=test_error,
+        ))
+
+        if bisect and status in ("BUILD_FAIL", "TEST_FAIL"):
+            from ai_test.mape.bisect import auto_bisect_range
+            auto_bisect_range(
+                entry.pkg_name, spec_str,
+                test=(status == "TEST_FAIL"),
+                kb_path=kb_path,
+            )
+
+    failed = [r for r in results if not r.concretized]
+    passed_r = [r for r in results if r.concretized]
+    built = [r for r in results if r.installed]
+    test_run = [r for r in results if r.test_passed is not None]
+    parts = [f"{len(results)} processed", f"{len(passed_r)} concretized", f"{len(failed)} failed"]
+    if build or test:
+        parts.append(f"{len(built)} built")
+    if test_run:
+        t_pass = sum(1 for r in test_run if r.test_passed)
+        t_fail = sum(1 for r in test_run if not r.test_passed)
+        parts.append(f"{t_pass} test_pass")
+        if t_fail:
+            parts.append(f"{t_fail} test_fail")
+    print(f"\n{' | '.join(parts)} : {kb_path}")
 
     return results

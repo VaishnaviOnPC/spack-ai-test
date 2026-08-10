@@ -33,7 +33,7 @@ def _kb_ctx(schema: PackageSchema, kb_entries: list) -> str:
 
     lines = [f"KB history for {schema.name} ({len(kb_entries)} entries):"]
     if passed:
-        lines.append(f"  Concretized OK ({len(passed)}) — do not regenerate these:")
+        lines.append(f"  Concretized OK ({len(passed)}) - do not regenerate these:")
         for e in passed[:3]:
             lines.append(f"    {e.spec}")
     if failed:
@@ -43,7 +43,7 @@ def _kb_ctx(schema: PackageSchema, kb_entries: list) -> str:
             lines.append(f"    {e.spec}: {reason}")
     if queued:
         lines.append(f"  Queued for CI: {len(queued)} specs")
-    lines.append("Generate NEW specs not already in KB. Avoid patterns similar to known failures.")
+    lines.append("Generate NEW specs not already in KB.")
     return "\n".join(lines)
 
 
@@ -55,6 +55,8 @@ def call_llm(
     model: str,
     retrieval: bool = True,
     auto_patterns: list = None,
+    github_signal=None,
+    issue_context: str = "",
 ) -> LLMResponse:
     dep_gap = gap_context(schema) if retrieval else ""
     dep_versions = valid_dep_versions_context(schema) if retrieval else ""
@@ -73,6 +75,20 @@ def call_llm(
         messages.append({"role": "user", "content": dep_gap})
     if kb_pattern:
         messages.append({"role": "user", "content": kb_pattern})
+    if github_signal:
+        messages.append({"role": "user", "content": (
+            f"GitHub activity for {schema.name} (upstream: {github_signal.slug}): "
+            f"{github_signal.open_issues} open issues, {github_signal.open_prs} open PRs. "
+            "This indicates an actively-changing package - prioritize testing variant "
+            "combinations and older versions that may have regressed silently."
+        )})
+    if issue_context:
+        messages.append({"role": "user", "content": (
+            issue_context + "\n\nUse these reports to guide your spec generation: "
+            "prefer versions, variants, and compiler combinations that appear in failing "
+            "reports. Do not reproduce specs that are working; explore the boundaries "
+            "around the reported failures."
+        )})
     if installed:
         messages.append({"role": "user", "content": installed})
     messages += [

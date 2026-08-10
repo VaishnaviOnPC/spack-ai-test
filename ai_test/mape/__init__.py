@@ -1,7 +1,9 @@
 import re
+from datetime import datetime
 
 from ai_test.mape.analyze import analyze as analyze_deps
-from ai_test.mape.execute import execute_all
+from ai_test.mape.execute import execute_all, execute_queued
+from ai_test.mape.metrics import fetch_github_signal, fetch_issue_context
 from ai_test.mape.monitor import load_context
 from ai_test.mape.plan import call_llm
 from ai_test.mape.retrieval import mine_persistent_patterns
@@ -92,7 +94,7 @@ def score_spec(spec_str: str, kb_path: str):
         print(f"\nOverall risk: {_risk_label(top.score)} (top dep: {top.name}, score {top.score:.1f})\n")
 
 
-def run(pkg_name: str, kb_path: str, model: str = "claude-haiku-4-5", build: bool = False, test: bool = False, local: bool = False, compiler: str = None, retrieval: bool = True):
+def run(pkg_name: str, kb_path: str, model: str = "claude-haiku-4-5", build: bool = False, test: bool = False, local: bool = False, compiler: str = None, retrieval: bool = True, plan_only: bool = False, bisect: bool = False):
     context = load_context(pkg_name, kb_path)
     schema = context.package_schema
     risk_deps, installed_compilers, all_compilers, failure_rate = analyze_deps(context)
@@ -120,7 +122,11 @@ def run(pkg_name: str, kb_path: str, model: str = "claude-haiku-4-5", build: boo
 
     retrieval_str = "" if retrieval else " | no retrieval"
     py_str = " | python package" if is_python else ""
-    print(f"\n{schema.name} | KB: {len(context.kb_entries)} entries | {rate_str} | {compiler_str}{retrieval_str}{py_str}")
+
+    gh = fetch_github_signal(pkg_name)
+    gh_str = f" | issues: {gh.open_issues} prs: {gh.open_prs}" if gh else ""
+
+    print(f"\n{schema.name} | KB: {len(context.kb_entries)} entries | {rate_str} | {compiler_str}{retrieval_str}{py_str}{gh_str}")
 
     if not installed_compilers:
         print("(hint: run 'spack compiler find' to register compilers)")
@@ -131,9 +137,19 @@ def run(pkg_name: str, kb_path: str, model: str = "claude-haiku-4-5", build: boo
     all_kb = load_full_kb(kb_path)
     auto_patterns = mine_persistent_patterns(all_kb) if retrieval else []
 
+    issue_context = ""
+    if gh:
+        if compiler:
+            issue_context = fetch_issue_context(gh.slug, compilers=[compiler], limit=5)
+        elif local:
+            issue_context = fetch_issue_context(gh.slug, compilers=installed_compilers, limit=12)
+        else:
+            issue_context = fetch_issue_context(gh.slug, compilers=[], limit=22)
+
     llm_result = call_llm(
         schema, risk_deps, compilers_for_plan, context.kb_entries, model,
         retrieval=retrieval, auto_patterns=auto_patterns,
+        github_signal=gh, issue_context=issue_context,
     )
 
     if not llm_result.suggested_specs:
@@ -141,6 +157,34 @@ def run(pkg_name: str, kb_path: str, model: str = "claude-haiku-4-5", build: boo
         print(llm_result.raw)
         return
 
+
+    if plan_only:
+        from ai_test.kb.store import append_entry, is_known, load as load_full_kb2
+        from ai_test.kb.schema import KBEntry
+        existing = load_full_kb2(kb_path)
+        queued = 0
+        skipped = 0
+        for spec_str in llm_result.suggested_specs:
+            if is_known(existing, schema.name, spec_str, schema.sha256):
+                print(f"[~] {spec_str}  (already in KB, skipping)")
+                skipped += 1
+                continue
+            entry = KBEntry(
+                pkg_name=schema.name,
+                spec=spec_str,
+                concretized=False,
+                failure_reason=None,
+                pkg_hash=schema.sha256,
+                timestamp=datetime.now().isoformat(),
+                validation_status="pending",
+            )
+            append_entry(kb_path, entry)
+            print(f"[Q] {spec_str}")
+            queued += 1
+        print(f"\n{queued} specs queued | {skipped} skipped : {kb_path}")
+        print(f"Next step (compute node):")
+        print(f"  spack ai-test {pkg_name} --execute-queued --test --kb {kb_path}")
+        return
 
     results = execute_all(
         llm_result.suggested_specs,
@@ -150,6 +194,7 @@ def run(pkg_name: str, kb_path: str, model: str = "claude-haiku-4-5", build: boo
         model=model,
         build=build,
         test=test,
+        bisect=bisect,
     )
 
     ci = [r for r in results if not r.concretized and r.failure_reason is None]
@@ -171,3 +216,7 @@ def run(pkg_name: str, kb_path: str, model: str = "claude-haiku-4-5", build: boo
         ci_needed = [c for c in all_compilers if c not in installed_compilers]
         parts.append(f"{len(ci)} queued for CI ({', '.join(ci_needed)})")
     print(f"\n{' | '.join(parts)} : {kb_path}")
+
+
+def run_queued(pkg_name: str, kb_path: str, build: bool = False, test: bool = False, bisect: bool = False):
+    execute_queued(pkg_name, kb_path=kb_path, build=build, test=test, bisect=bisect)

@@ -197,12 +197,12 @@ def kb_patterns(kb_entries: list) -> str:
     lines = ["Empirical failure patterns from KB history:"]
     if risky:
         risky.sort(key=lambda x: x[3], reverse=True)
-        lines.append("  High failure rate — prioritise testing these combinations:")
+        lines.append("  High failure rate - prioritise testing these combinations:")
         for feat, fc, total, rate in risky[:5]:
             lines.append(f"    {feat}  ({fc}/{total} specs failed)")
     if safe:
         safe.sort(key=lambda x: x[1], reverse=True)
-        lines.append("  Low failure rate — well-tested, de-prioritise:")
+        lines.append("  Low failure rate - well-tested, de-prioritise:")
         for feat, pc, total in safe[:3]:
             lines.append(f"    {feat}  ({pc}/{total} specs passed)")
     return "\n".join(lines)
@@ -238,7 +238,7 @@ def mine_persistent_patterns(all_kb_entries: list, threshold: float = 0.80, min_
         if rate >= threshold:
             rules.append(
                 f"Observed: '{feat}' fails concretization in {fails}/{total} tests "
-                f"({rate*100:.0f}%) — high-risk, prioritise testing this boundary"
+                f"({rate*100:.0f}%) - high-risk, prioritise testing this boundary"
             )
 
     for feat, total in build_total.items():
@@ -249,7 +249,7 @@ def mine_persistent_patterns(all_kb_entries: list, threshold: float = 0.80, min_
         if rate >= threshold:
             rules.append(
                 f"Observed: '{feat}' causes build failures in {fails}/{total} "
-                f"install attempts ({rate*100:.0f}%) — known compilation risk"
+                f"install attempts ({rate*100:.0f}%) - known compilation risk"
             )
 
     def _priority(r: str) -> int:

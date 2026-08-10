@@ -32,6 +32,18 @@ def append_entry(path: str, entry: KBEntry):
     save(path, entries)
 
 
+def replace_entry(path: str, entry: KBEntry) -> bool:
+    entries = load(path)
+    for i, e in enumerate(entries):
+        if e.pkg_name == entry.pkg_name and e.spec == entry.spec and e.pkg_hash == entry.pkg_hash:
+            entries[i] = entry
+            save(path, entries)
+            return True
+    entries.append(entry)
+    save(path, entries)
+    return False
+
+
 def is_known(entries: List[KBEntry], pkg_name: str, spec: str, pkg_hash: str) -> bool:
     return any(
         e.pkg_name == pkg_name and e.spec == spec and e.pkg_hash == pkg_hash

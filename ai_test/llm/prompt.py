@@ -1,6 +1,6 @@
 SYSTEM_PROMPT = """\
 You are a Spack HPC package manager expert. Your job is to find BUILD and TEST failures \
-that Spack's CI pipeline misses — not concretization failures.
+that Spack's CI pipeline misses - not concretization failures.
 
 Spack's concretizer already enforces version constraints and conflicts perfectly. \
 A spec that fails to concretize is NOT a useful result. \
@@ -56,7 +56,7 @@ Generate 3-5 Spack specs that CI does not cover.
 Requirements:
 - {compiler_constraint}
 - Use +/~ for boolean variants (NOT variant=True or variant=False)
-- Vary ONE major axis per spec: either (a) an older package version, or (b) a flipped variant, or (c) a pinned old dependency — not all three at once
+- Vary ONE major axis per spec: either (a) an older package version, or (b) a flipped variant, or (c) a pinned old dependency - not all three at once
 - If a 'shared' variant exists: flip it from the default in at least one spec
 - If a 'cxxstd' variant exists: try a non-default C++ standard value in at least one spec
 - For any ^dep@version pin, use ONLY the exact version strings from the provided "Valid Spack registry versions" list; if no list is provided, do not pin any dependency version
