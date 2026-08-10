@@ -16,6 +16,7 @@ TEST_FAIL = "test_fail"
 class BisectResult:
     pkg_name: str
     failed_spec: str
+    first_bad: Optional[str] = None
     first_bad_type: Optional[str] = None
     last_good_before: Optional[str] = None
     last_bad: Optional[str] = None
