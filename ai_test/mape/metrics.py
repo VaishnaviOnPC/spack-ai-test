@@ -129,7 +129,7 @@ def fetch_github_signal(pkg_name: str) -> Optional[GithubSignal]:
         pkg_cls = spack.repo.PATH.get_pkg_class(pkg_name)
         homepage = getattr(pkg_cls, "homepage", "") or ""
         git_url = getattr(pkg_cls, "git", "") or ""
-    except Exception:
+    except spack.repo.UnknownPackageError:
         return None
 
     slug = _parse_github_slug(homepage) or _parse_github_slug(git_url)

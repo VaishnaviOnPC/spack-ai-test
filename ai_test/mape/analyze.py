@@ -10,7 +10,7 @@ def get_compilers():
     try:
         import spack.compilers.config as cc
         installed = [c.format("{name}@{version}") for c in cc.all_compilers()]
-    except Exception:
+    except (ImportError, AttributeError):
         import spack.config
         entries = spack.config.get("compilers") or []
         installed = [e["compiler"]["spec"] for e in entries if "compiler" in e]

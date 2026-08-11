@@ -18,6 +18,12 @@ from ai_test.mape.schema import CandidateSpec
 
 _SKIP_VARIANT_NAMES = {"arch", "os", "target", "platform"}
 
+_ENV_TOOLS = {
+    "tar", "gmake", "make", "python", "python-venv", "re2c",
+    "clingo-bootstrap", "bison", "perl", "m4", "autoconf",
+    "automake", "libtool", "pkgconf", "util-macros",
+}
+
 
 @contextmanager
 def suppress_clingo_warnings():
@@ -113,11 +119,8 @@ def run_test(spec_str: str) -> tuple:
             summary = error_lines[0] if error_lines else (lines[-1] if lines else "test suite failed")
             return False, summary
         return True, None
-    except Exception as e:
-        err = str(e)
-        if "test" in err.lower() and "fail" in err.lower():
-            return False, err.splitlines()[0]
-        return False, err
+    except OSError as e:
+        return False, f"failed to run spack tests: {e}"
 
 
 def _error_type(error: str) -> str:
@@ -133,6 +136,40 @@ def _error_type(error: str) -> str:
     if "compiler" in e and ("not found" in e or "not installed" in e):
         return "compiler_not_found"
     return "unknown"
+
+
+def _extract_failing_pkg(install_error: str) -> str:
+    skip = {"the", "following", "packages", "failed"}
+    for line in (install_error or "").splitlines():
+        line = line.strip()
+        m = re.match(r'^([a-zA-Z][a-zA-Z0-9\-]*)(@[^\s/]+)?', line)
+        if m and m.group(1).lower() not in skip:
+            return (m.group(1) + (m.group(2) or "")).rstrip(":")
+    return "unknown"
+
+
+def _classify_failure(pkg_name: str, install_error: str) -> str:
+    for line in (install_error or "").splitlines():
+        line = line.strip()
+        m = re.match(r'^([a-zA-Z][a-zA-Z0-9\-]*)@', line)
+        if m:
+            failing = m.group(1).lower()
+            if failing in _ENV_TOOLS:
+                return "env_fail"
+            if failing != pkg_name.lower():
+                return "dep_fail"
+            return "build_fail"
+    return "build_fail"
+
+
+def _reproduce(spec_str: str) -> bool:
+    print("  [reproduce] re-running build to confirm failure...", flush=True)
+    installed, _ = run_install(spec_str)
+    if not installed:
+        print("  [reproduce] confirmed: failure reproduces")
+        return True
+    print("  [reproduce] flaky: second build succeeded => skipping bisect")
+    return False
 
 
 def _spec_compiler(spec_str: str):
@@ -341,13 +378,31 @@ def execute_all(specs, schema: PackageSchema, kb_path: str, installed_compilers=
             test_error=test_error,
         ))
 
-        if bisect and status in ("BUILD_FAIL", "TEST_FAIL"):
+        if bisect and status == "TEST_FAIL":
+            print(f"  TEST_FAIL: test suite failed in target package => bisecting")
             from ai_test.mape.bisect import auto_bisect_range
             auto_bisect_range(
                 schema.name, spec_str,
-                test=(status == "TEST_FAIL"),
+                test=True,
                 kb_path=kb_path,
             )
+        elif bisect and status == "BUILD_FAIL":
+            classification = _classify_failure(schema.name, install_error)
+            if classification == "env_fail":
+                failing = _extract_failing_pkg(install_error)
+                print(f"  ENV_FAIL: '{failing}' is an environment tool => skipping bisect")
+            elif classification == "dep_fail":
+                failing = _extract_failing_pkg(install_error)
+                print(f"  DEP_FAIL: dependency '{failing}' failed => skipping bisect")
+            else:
+                print(f"  BUILD_FAIL: failure is in target package")
+                if _reproduce(spec_str):
+                    from ai_test.mape.bisect import auto_bisect_range
+                    auto_bisect_range(
+                        schema.name, spec_str,
+                        test=False,
+                        kb_path=kb_path,
+                    )
 
     return results
 
@@ -459,13 +514,31 @@ def execute_queued(
             test_error=test_error,
         ))
 
-        if bisect and status in ("BUILD_FAIL", "TEST_FAIL"):
+        if bisect and status == "TEST_FAIL":
+            print(f"  TEST_FAIL: test suite failed in target package => bisecting")
             from ai_test.mape.bisect import auto_bisect_range
             auto_bisect_range(
                 entry.pkg_name, spec_str,
-                test=(status == "TEST_FAIL"),
+                test=True,
                 kb_path=kb_path,
             )
+        elif bisect and status == "BUILD_FAIL":
+            classification = _classify_failure(entry.pkg_name, install_error)
+            if classification == "env_fail":
+                failing = _extract_failing_pkg(install_error)
+                print(f"  ENV_FAIL: '{failing}' is an environment tool => skipping bisect")
+            elif classification == "dep_fail":
+                failing = _extract_failing_pkg(install_error)
+                print(f"  DEP_FAIL: dependency '{failing}' failed => skipping bisect")
+            else:
+                print(f"  BUILD_FAIL: failure is in target package")
+                if _reproduce(spec_str):
+                    from ai_test.mape.bisect import auto_bisect_range
+                    auto_bisect_range(
+                        entry.pkg_name, spec_str,
+                        test=False,
+                        kb_path=kb_path,
+                    )
 
     failed = [r for r in results if not r.concretized]
     passed_r = [r for r in results if r.concretized]

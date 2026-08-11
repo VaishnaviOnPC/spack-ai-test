@@ -22,6 +22,8 @@ class BisectResult:
     last_bad: Optional[str] = None
     last_bad_type: Optional[str] = None
     first_fixed: Optional[str] = None
+    concretize_boundary_before: Optional[str] = None
+    concretize_boundary_after: Optional[str] = None
     steps: List[Tuple[str, str]] = field(default_factory=list)
     kb_hits: int = 0
 
@@ -44,7 +46,7 @@ def _replace_version(spec_str: str, new_version: str) -> str:
 def _all_versions(pkg_name: str) -> List[str]:
     try:
         pkg_cls = spack.repo.PATH.get_pkg_class(pkg_name)
-    except Exception:
+    except spack.repo.UnknownPackageError:
         return []
     versions = []
     for v, attrs in getattr(pkg_cls, "versions", {}).items():
@@ -56,8 +58,6 @@ def _all_versions(pkg_name: str) -> List[str]:
 def _kb_lookup(spec_str: str, kb_path: Optional[str], pkg_name: str, pkg_hash: str) -> Optional[str]:
     if not kb_path or not pkg_hash:
         return None
-    try:
-        from ai_test.kb.store import load as load_kb
         for e in load_kb(kb_path):
             if (e.pkg_name == pkg_name
                     and e.spec == spec_str
@@ -71,8 +71,6 @@ def _kb_lookup(spec_str: str, kb_path: Optional[str], pkg_name: str, pkg_hash: s
                     return BUILD_FAIL
                 if e.test_passed is False:
                     return TEST_FAIL
-    except Exception:
-        pass
     return None
 
 
@@ -254,6 +252,7 @@ def auto_bisect_range(
             else:
                 result.first_bad = _replace_version(failed_spec, all_vers[lo])
                 result.first_bad_type = lo_out
+                result.concretize_boundary_before = _replace_version(failed_spec, all_vers[hi])
         else:
             print("  [bisect] all older versions also fail")
     else:
@@ -279,8 +278,9 @@ def auto_bisect_range(
                 result.last_bad_type = lo_out2
                 result.first_fixed = _replace_version(failed_spec, all_vers[hi2])
             else:
-                result.last_bad = _replace_version(failed_spec, all_vers[hi2])
-                result.last_bad_type = hi_out2
+                result.last_bad = _replace_version(failed_spec, all_vers[lo2])
+                result.last_bad_type = lo_out2
+                result.concretize_boundary_after = _replace_version(failed_spec, all_vers[hi2])
         else:
             print("  [bisect] all newer versions also fail")
     else:
@@ -292,13 +292,25 @@ def auto_bisect_range(
 
     fb_ver = _extract_version(result.first_bad) if result.first_bad else None
     lb_ver = _extract_version(result.last_bad) if result.last_bad else None
+    cb_before = _extract_version(result.concretize_boundary_before) if result.concretize_boundary_before else None
+    cb_after  = _extract_version(result.concretize_boundary_after)  if result.concretize_boundary_after  else None
 
     if fb_ver and lb_ver:
-        print(f"  [bisect] failure range: {fb_ver} to {lb_ver}")
+        print(f"  [bisect] Build failure range: {fb_ver} to {lb_ver}")
     elif fb_ver:
-        print(f"  [bisect] failure start: {fb_ver} [{result.first_bad_type}] (leading edge still failing)")
+        print(f"  [bisect] Build failure range: {fb_ver} => (newest tested)  [{result.first_bad_type}]")
     elif lb_ver:
-        print(f"  [bisect] failure end: {lb_ver} [{result.last_bad_type}] (predates all known releases)")
+        print(f"  [bisect] Build failure range: (oldest tested) => {lb_ver}  [{result.last_bad_type}]")
+
+    if result.last_good_before:
+        print(f"  [bisect] Last known good: {_extract_version(result.last_good_before)}")
+    if result.first_fixed:
+        print(f"  [bisect] First fixed:     {_extract_version(result.first_fixed)}")
+
+    if cb_before:
+        print(f"  [bisect] Concretization boundary: {cb_before} => CONCRETIZE_FAIL (older versions incompatible with this spec)")
+    if cb_after:
+        print(f"  [bisect] Concretization boundary: {cb_after} => CONCRETIZE_FAIL (newer versions incompatible with this spec)")
 
     if kb_path and pkg_hash:
         from ai_test.kb.schema import KBEntry
