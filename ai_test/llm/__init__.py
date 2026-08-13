@@ -65,6 +65,32 @@ def _conflicts(schema: PackageSchema) -> str:
     return "\n".join(lines)
 
 
+def _failed_specs_context(pkg_name: str, kb_path: str | None) -> str | None:
+    if not kb_path:
+        return None
+    from ai_test.kb.store import load as load_kb
+    entries = load_kb(kb_path)
+
+    bad = [
+        e for e in entries
+        if e.pkg_name == pkg_name
+        and not e.concretized
+        and e.failure_reason
+    ]
+    if not bad:
+        return None
+
+    lines = [
+        f"The following {pkg_name} specs failed to concretize or were rejected in "
+        "previous runs. Do NOT generate these exact specs again. Review the rejection "
+        "reasons and avoid the specific conflict that caused the failure:"
+    ]
+    for e in bad[-20:]:
+        reason = e.failure_reason.splitlines()[0] if e.failure_reason else "unknown"
+        lines.append(f"  {e.spec}  # reason: {reason}")
+    return "\n".join(lines)
+
+
 def _parse(package: str, raw: str) -> LLMResponse:
     cleaned = re.sub(r"```json|```", "", raw).strip()
     try:
@@ -79,11 +105,19 @@ def _parse(package: str, raw: str) -> LLMResponse:
     return LLMResponse(package=package, suggested_specs=specs, raw=raw)
 
 
-def analyze(schema: PackageSchema, model="claude-haiku-4-5", dep_scores=None, compilers=None) -> LLMResponse:
+def analyze(
+    schema: PackageSchema,
+    model="claude-haiku-4-5",
+    dep_scores=None,
+    compilers=None,
+    kb_path: str | None = None,
+) -> LLMResponse:
+    failed_ctx = _failed_specs_context(schema.name, kb_path)
     messages = build_messages(
         _pkg_summary(schema),
         _risk_summary(schema, dep_scores, compilers),
         _conflicts(schema),
         compilers=compilers,
+        failed_specs_ctx=failed_ctx,
     )
     return _parse(schema.name, LLMClient(model=model).ask(messages))

@@ -28,7 +28,7 @@ def _kb_ctx(schema: PackageSchema, kb_entries: list) -> str:
         return "KB history: no prior results for this package"
 
     passed = [e for e in kb_entries if e.concretized]
-    failed = [e for e in kb_entries if not e.concretized and e.failure_reason]
+    failed_conc = [e for e in kb_entries if not e.concretized and e.failure_reason]
     queued = [e for e in kb_entries if e.validation_status == "ci_queue"]
 
     lines = [f"KB history for {schema.name} ({len(kb_entries)} entries):"]
@@ -36,13 +36,17 @@ def _kb_ctx(schema: PackageSchema, kb_entries: list) -> str:
         lines.append(f"  Concretized OK ({len(passed)}) - do not regenerate these:")
         for e in passed[:3]:
             lines.append(f"    {e.spec}")
-    if failed:
-        lines.append(f"  Known failures ({len(failed)}):")
-        for e in failed[:3]:
-            reason = e.failure_reason.splitlines()[0]
-            lines.append(f"    {e.spec}: {reason}")
+    if failed_conc:
+        lines.append(
+            f"\n  The following {len(failed_conc)} specs FAILED to concretize or were "
+            "rejected in previous runs. Do NOT generate these exact specs again. Review "
+            "the rejection reasons and avoid the specific conflict that caused the failure:"
+        )
+        for e in failed_conc[-20:]:
+            reason = e.failure_reason.splitlines()[0] if e.failure_reason else "unknown"
+            lines.append(f"    {e.spec}  # {reason}")
     if queued:
-        lines.append(f"  Queued for CI: {len(queued)} specs")
+        lines.append(f"\n  Queued for CI: {len(queued)} specs")
     lines.append("Generate NEW specs not already in KB.")
     return "\n".join(lines)
 

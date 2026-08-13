@@ -65,11 +65,14 @@ Output only:
 {{"test_scenarios": ["<pkg@version +var ~var ^dep@version {example_compiler}>", ...]}}"""
 
 
-def build_messages(pkg_ctx, risk_ctx, conflict_ctx, compilers=None) -> list:
-    return [
+def build_messages(pkg_ctx, risk_ctx, conflict_ctx, compilers=None, failed_specs_ctx=None) -> list:
+    messages = [
         {"role": "system", "content": get_system_prompt()},
         {"role": "user", "content": pkg_ctx},
         {"role": "user", "content": risk_ctx},
         {"role": "user", "content": conflict_ctx},
-        {"role": "user", "content": task_prompt(compilers)},
     ]
+    if failed_specs_ctx:
+        messages.append({"role": "user", "content": failed_specs_ctx})
+    messages.append({"role": "user", "content": task_prompt(compilers)})
+    return messages
