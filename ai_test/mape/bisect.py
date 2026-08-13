@@ -58,8 +58,8 @@ def _all_versions(pkg_name: str) -> List[str]:
 def _kb_lookup(spec_str: str, kb_path: Optional[str], pkg_name: str, pkg_hash: str) -> Optional[str]:
     if not kb_path or not pkg_hash:
         return None
-        for e in load_kb(kb_path):
-            if (e.pkg_name == pkg_name
+    for e in load_kb(kb_path):
+        if (e.pkg_name == pkg_name
                     and e.spec == spec_str
                     and e.pkg_hash == pkg_hash
                     and e.validation_status == "validated"):

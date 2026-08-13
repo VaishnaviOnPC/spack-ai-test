@@ -162,13 +162,20 @@ def _classify_failure(pkg_name: str, install_error: str) -> str:
     return "build_fail"
 
 
-def _reproduce(spec_str: str) -> bool:
-    print("  [reproduce] re-running build to confirm failure...", flush=True)
-    installed, _ = run_install(spec_str)
-    if not installed:
-        print("  [reproduce] confirmed: failure reproduces")
-        return True
-    print("  [reproduce] flaky: second build succeeded => skipping bisect")
+def _reproduce(spec_str: str, is_test: bool = False) -> bool:
+    action = "test" if is_test else "build"
+    print(f"  [reproduce] re-running {action} to confirm failure...", flush=True)
+    if is_test:
+        passed, _ = run_test(spec_str)
+        if not passed:
+            print("  [reproduce] confirmed: failure reproduces")
+            return True
+    else:
+        installed, _ = run_install(spec_str)
+        if not installed:
+            print("  [reproduce] confirmed: failure reproduces")
+            return True
+    print(f"  [reproduce] flaky: second {action} succeeded => skipping bisect")
     return False
 
 
@@ -380,12 +387,13 @@ def execute_all(specs, schema: PackageSchema, kb_path: str, installed_compilers=
 
         if bisect and status == "TEST_FAIL":
             print(f"  TEST_FAIL: test suite failed in target package => bisecting")
-            from ai_test.mape.bisect import auto_bisect_range
-            auto_bisect_range(
-                schema.name, spec_str,
-                test=True,
-                kb_path=kb_path,
-            )
+            if _reproduce(spec_str, is_test=True):
+                from ai_test.mape.bisect import auto_bisect_range
+                auto_bisect_range(
+                    schema.name, spec_str,
+                    test=True,
+                    kb_path=kb_path,
+                )
         elif bisect and status == "BUILD_FAIL":
             classification = _classify_failure(schema.name, install_error)
             if classification == "env_fail":
@@ -516,12 +524,13 @@ def execute_queued(
 
         if bisect and status == "TEST_FAIL":
             print(f"  TEST_FAIL: test suite failed in target package => bisecting")
-            from ai_test.mape.bisect import auto_bisect_range
-            auto_bisect_range(
-                entry.pkg_name, spec_str,
-                test=True,
-                kb_path=kb_path,
-            )
+            if _reproduce(spec_str, is_test=True):
+                from ai_test.mape.bisect import auto_bisect_range
+                auto_bisect_range(
+                    entry.pkg_name, spec_str,
+                    test=True,
+                    kb_path=kb_path,
+                )
         elif bisect and status == "BUILD_FAIL":
             classification = _classify_failure(entry.pkg_name, install_error)
             if classification == "env_fail":
