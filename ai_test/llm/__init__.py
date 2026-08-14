@@ -92,7 +92,7 @@ def _failed_specs_context(pkg_name: str, kb_path: str | None) -> str | None:
 
 
 def _parse(package: str, raw: str) -> LLMResponse:
-    cleaned = re.sub(r"```json|```", "", raw).strip()
+    cleaned = raw.split("```json")[-1].split("```")[0].strip()
     try:
         data = json.loads(cleaned)
     except json.JSONDecodeError:
