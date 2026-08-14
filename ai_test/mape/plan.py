@@ -27,20 +27,40 @@ def _kb_ctx(schema: PackageSchema, kb_entries: list) -> str:
     if not kb_entries:
         return "KB history: no prior results for this package"
 
-    passed = [e for e in kb_entries if e.concretized]
+    concretized = [e for e in kb_entries if e.concretized]
     failed_conc = [e for e in kb_entries if not e.concretized and e.failure_reason]
     queued = [e for e in kb_entries if e.validation_status == "ci_queue"]
 
     lines = [f"KB history for {schema.name} ({len(kb_entries)} entries):"]
-    if passed:
-        lines.append(f"  Concretized OK ({len(passed)}) - do not regenerate these:")
-        for e in passed[:3]:
-            lines.append(f"    {e.spec}")
+    if concretized:
+        def _sort_key(e):
+            if e.test_passed is False: return 0
+            if not e.installed and e.install_error: return 1
+            if e.installed: return 2
+            return 3
+        concretized.sort(key=_sort_key)
+
+        lines.append(
+            f"  Concretized specs ({len(concretized)}) - these combinations successfully bypassed the concretizer. "
+            "Specs marked [BUILD_FAIL] or [TEST_FAIL] are highly valuable discoveries. "
+            "Learn from these patterns to explore the configuration space and find new bugs. "
+            "Do NOT regenerate these exact specs:"
+        )
+        for e in concretized[:5]:
+            if e.test_passed is False:
+                tag = "[TEST_FAIL]"
+            elif not e.installed and e.install_error:
+                tag = "[BUILD_FAIL]"
+            elif e.installed:
+                tag = "[PASS]"
+            else:
+                tag = "[CONCRETIZED]"
+            lines.append(f"    {tag} {e.spec}")
     if failed_conc:
         lines.append(
-            f"\n  The following {len(failed_conc)} specs FAILED to concretize or were "
-            "rejected in previous runs. Do NOT generate these exact specs again. Review "
-            "the rejection reasons and avoid the specific conflict that caused the failure:"
+            f"\n  The following {len(failed_conc)} specs FAILED to concretize - "
+            "the concretizer rejected them. Their variant/version patterns are INVALID. "
+            "DO NOT generate specs using these patterns:"
         )
         for e in failed_conc[-20:]:
             reason = e.failure_reason.splitlines()[0] if e.failure_reason else "unknown"
