@@ -1,9 +1,9 @@
-import os
+﻿import os
 import sys
 
 
 project = "spack-ai-test"
-copyright = "2025, Vaishnavi Mishra, CERN-HSF GSoC"
+copyright = ""
 author = "Vaishnavi Mishra"
 release = "0.1.0"
 
@@ -30,5 +30,6 @@ html_theme_options = {
 }
 html_static_path = ["_static"]
 html_title = "spack-ai-test Documentation"
+html_show_sphinx = False
 
 
