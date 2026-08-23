@@ -1,0 +1,348 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Command Reference &mdash; spack-ai-test Documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=01f34227"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Configuration" href="configuration.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            spack-ai-test
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#installation">Installation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="getting_started.html#clone-the-extension-repository">1. Clone the Extension Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="getting_started.html#register-the-extension-in-spack">2. Register the Extension in Spack</a></li>
+<li class="toctree-l3"><a class="reference internal" href="getting_started.html#verify-installation">3. Verify Installation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#configuring-api-keys">Configuring API Keys</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#running-your-first-test">Running Your First Test</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="basic_usage.html">Basic Usage</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="basic_usage.html#inspecting-package-metadata">Inspecting Package Metadata</a></li>
+<li class="toctree-l2"><a class="reference internal" href="basic_usage.html#raw-json-schema-export">Raw JSON Schema Export</a></li>
+<li class="toctree-l2"><a class="reference internal" href="basic_usage.html#evaluating-spec-risk-scores">Evaluating Spec Risk Scores</a></li>
+<li class="toctree-l2"><a class="reference internal" href="basic_usage.html#generating-test-scenarios">Generating Test Scenarios</a></li>
+<li class="toctree-l2"><a class="reference internal" href="basic_usage.html#targeting-specific-compilers">Targeting Specific Compilers</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="workflows.html">Advanced Workflows</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="workflows.html#the-mape-k-self-adaptive-loop">The MAPE-K Self-Adaptive Loop</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflows.html#testing-depth-build-and-regression-testing">Testing Depth: Build and Regression Testing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="workflows.html#building-concretized-specs">Building Concretized Specs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="workflows.html#running-package-test-suites">Running Package Test Suites</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="workflows.html#hpc-cluster-workflows-offline-compute-nodes">HPC Cluster Workflows (Offline / Compute Nodes)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="workflows.html#phase-1-login-node-online-generation">Phase 1: Login Node (Online Generation)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="workflows.html#phase-2-compute-node-offline-execution">Phase 2: Compute Node (Offline Execution)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="workflows.html#automated-failure-bisection">Automated Failure Bisection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflows.html#knowledge-base">Knowledge Base</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="workflows.html#inspecting-the-knowledge-base">Inspecting the Knowledge Base</a></li>
+<li class="toctree-l3"><a class="reference internal" href="workflows.html#resetting-the-knowledge-base">Resetting the Knowledge Base</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#configuration-precedence">Configuration Precedence</a></li>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#configuration-file-ai-test-yaml">Configuration File: <code class="docutils literal notranslate"><span class="pre">ai_test.yaml</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#configuration-options">Configuration Options</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#environment-variables">Environment Variables</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#api-keys">API Keys</a></li>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#extension-overrides">Extension Overrides</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#supported-llm-models">Supported LLM Models</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Command Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#spack-ai-test"><code class="docutils literal notranslate"><span class="pre">spack</span> <span class="pre">ai-test</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#synopsis">Synopsis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#description">Description</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#arguments">Arguments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#options">Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#examples">Examples</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">spack-ai-test</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Command Reference</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/command_reference.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="command-reference">
+<span id="id1"></span><h1>Command Reference<a class="headerlink" href="#command-reference" title="Link to this heading"></a></h1>
+<p>This page documents the full command-line interface for the <code class="docutils literal notranslate"><span class="pre">spack</span> <span class="pre">ai-test</span></code> command.</p>
+<section id="spack-ai-test">
+<h2><code class="docutils literal notranslate"><span class="pre">spack</span> <span class="pre">ai-test</span></code><a class="headerlink" href="#spack-ai-test" title="Link to this heading"></a></h2>
+<section id="synopsis">
+<h3>Synopsis<a class="headerlink" href="#synopsis" title="Link to this heading"></a></h3>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>spack<span class="w"> </span>ai-test<span class="w"> </span><span class="o">[</span>-h<span class="o">]</span><span class="w"> </span><span class="o">[</span>--output-dir<span class="w"> </span>DIR<span class="o">]</span><span class="w"> </span><span class="o">[</span>--json<span class="o">]</span><span class="w"> </span><span class="o">[</span>--generate<span class="o">]</span><span class="w"> </span><span class="o">[</span>--mape<span class="o">]</span>
+<span class="go">                [--plan-only] [--execute-queued] [--kb PATH] [--build]</span>
+<span class="go">                [--test] [--local] [--model MODEL] [--no-retrieval]</span>
+<span class="go">                [--score SPEC] [--bisect]</span>
+<span class="go">                package</span>
+</pre></div>
+</div>
+</section>
+<section id="description">
+<h3>Description<a class="headerlink" href="#description" title="Link to this heading"></a></h3>
+<p>Extract package metadata, compute structural dependency risk metrics, and run
+LLM-assisted combinatorial testing to discover compatibility and build failures across
+the Spack configuration space.</p>
+</section>
+<section id="arguments">
+<h3>Arguments<a class="headerlink" href="#arguments" title="Link to this heading"></a></h3>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-arg-package">
+<span class="sig-name descname"><span class="pre">package</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-arg-package" title="Link to this definition"></a></dt>
+<dd><p>Name of the Spack package to inspect or test (e.g., <code class="docutils literal notranslate"><span class="pre">zlib</span></code>, <code class="docutils literal notranslate"><span class="pre">hdf5</span></code>, <code class="docutils literal notranslate"><span class="pre">openmpi</span></code>).
+A compiler constraint may be appended directly using standard Spack spec syntax
+(e.g., <code class="docutils literal notranslate"><span class="pre">openmpi%gcc&#64;13.3.0</span></code>).</p>
+</dd></dl>
+
+</section>
+<section id="options">
+<h3>Options<a class="headerlink" href="#options" title="Link to this heading"></a></h3>
+<section id="information-diagnostics">
+<h4>Information &amp; Diagnostics<a class="headerlink" href="#information-diagnostics" title="Link to this heading"></a></h4>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-json">
+<span class="sig-name descname"><span class="pre">--json</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-json" title="Link to this definition"></a></dt>
+<dd><p>Print the raw canonical JSON package schema to stdout instead of the default
+formatted terminal output.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-output-dir">
+<span class="sig-name descname"><span class="pre">--output-dir</span></span><span class="sig-prename descclassname"> <span class="pre">DIR</span></span><a class="headerlink" href="#cmdoption-output-dir" title="Link to this definition"></a></dt>
+<dd><p>Write the canonical schema (<code class="docutils literal notranslate"><span class="pre">canonical.json</span></code>) into the specified directory.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-score">
+<span class="sig-name descname"><span class="pre">--score</span></span><span class="sig-prename descclassname"> <span class="pre">SPEC</span></span><a class="headerlink" href="#cmdoption-score" title="Link to this definition"></a></dt>
+<dd><p>Compute and display the structural and empirical risk score for a user-provided
+spec string. Skips LLM generation and concretization entirely.</p>
+</dd></dl>
+
+</section>
+<section id="execution-modes">
+<h4>Execution Modes<a class="headerlink" href="#execution-modes" title="Link to this heading"></a></h4>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-generate">
+<span class="sig-name descname"><span class="pre">--generate</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-generate" title="Link to this definition"></a></dt>
+<dd><p>Prompt the LLM to generate candidate off-leading-edge test specifications based on the
+extracted package schema and risk analysis. Does not execute concretization or write
+to the Knowledge Base.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-mape">
+<span class="sig-name descname"><span class="pre">--mape</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-mape" title="Link to this definition"></a></dt>
+<dd><p>Execute the complete self-adaptive loop: analyze risk, generate candidate specs,
+statically validate them, test concretization via Spack’s ASP solver, and record
+results in the Knowledge Base.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-plan-only">
+<span class="sig-name descname"><span class="pre">--plan-only</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-plan-only" title="Link to this definition"></a></dt>
+<dd><p><strong>Login-node mode.</strong> Generate candidate test specs via the LLM and queue them in the
+Knowledge Base with status <code class="docutils literal notranslate"><span class="pre">pending</span></code>. Does not attempt concretization or compilation.
+Intended for use on internet-connected login nodes before submitting a batch job.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-execute-queued">
+<span class="sig-name descname"><span class="pre">--execute-queued</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-execute-queued" title="Link to this definition"></a></dt>
+<dd><p><strong>Compute-node mode.</strong> Process all <code class="docutils literal notranslate"><span class="pre">pending</span></code> specs stored in the Knowledge Base.
+Requires no internet access or LLM connectivity. Intended for use inside a Slurm or
+PBS batch script on a compute node.</p>
+</dd></dl>
+
+</section>
+<section id="execution-depth">
+<h4>Execution Depth<a class="headerlink" href="#execution-depth" title="Link to this heading"></a></h4>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-build">
+<span class="sig-name descname"><span class="pre">--build</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-build" title="Link to this definition"></a></dt>
+<dd><p>When used with <code class="docutils literal notranslate"><span class="pre">--mape</span></code> or <code class="docutils literal notranslate"><span class="pre">--execute-queued</span></code>, attempt to build each successfully
+concretized spec via <code class="docutils literal notranslate"><span class="pre">spack</span> <span class="pre">install</span></code> to detect compilation failures.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-test">
+<span class="sig-name descname"><span class="pre">--test</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-test" title="Link to this definition"></a></dt>
+<dd><p>When used with <code class="docutils literal notranslate"><span class="pre">--mape</span></code> or <code class="docutils literal notranslate"><span class="pre">--execute-queued</span></code>, install the package and run its
+test suite (<code class="docutils literal notranslate"><span class="pre">spack</span> <span class="pre">install</span> <span class="pre">--test=root</span></code>) to detect regression failures.
+Implies <code class="docutils literal notranslate"><span class="pre">--build</span></code>.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-bisect">
+<span class="sig-name descname"><span class="pre">--bisect</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-bisect" title="Link to this definition"></a></dt>
+<dd><p>On a deterministic build or test failure, automatically bisect the package’s version
+history to identify the regression. Uses exponential galloping to establish bounds,
+then binary search to isolate the exact version. Transient failures — such as network
+timeouts or parallel-make race conditions — are filtered out by a confirmatory second
+build attempt before bisection begins.</p>
+</dd></dl>
+
+</section>
+<section id="context-environment">
+<h4>Context &amp; Environment<a class="headerlink" href="#context-environment" title="Link to this heading"></a></h4>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-local">
+<span class="sig-name descname"><span class="pre">--local</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-local" title="Link to this definition"></a></dt>
+<dd><p>Restrict spec generation to compilers that are locally installed and visible to Spack.
+Avoids queuing specs that target unavailable toolchains.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-no-retrieval">
+<span class="sig-name descname"><span class="pre">--no-retrieval</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-no-retrieval" title="Link to this definition"></a></dt>
+<dd><p>Disable Version Gap Analysis and historical KB Pattern Mining during prompt construction.
+The LLM still receives the package schema, risk scores, and KB history, but not the
+live registry and pattern-mining context. Useful for comparing generation quality with
+and without retrieval augmentation.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-model">
+<span class="sig-name descname"><span class="pre">--model</span></span><span class="sig-prename descclassname"> <span class="pre">MODEL</span></span><a class="headerlink" href="#cmdoption-model" title="Link to this definition"></a></dt>
+<dd><p>LLM model identifier to use for spec generation. Overrides the value in <code class="docutils literal notranslate"><span class="pre">ai_test.yaml</span></code>.</p>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-kb">
+<span class="sig-name descname"><span class="pre">--kb</span></span><span class="sig-prename descclassname"> <span class="pre">PATH</span></span><a class="headerlink" href="#cmdoption-kb" title="Link to this definition"></a></dt>
+<dd><p>Path to an alternative JSON Knowledge Base file. Overrides the value in <code class="docutils literal notranslate"><span class="pre">ai_test.yaml</span></code>.</p>
+</dd></dl>
+
+</section>
+</section>
+<section id="examples">
+<h3>Examples<a class="headerlink" href="#examples" title="Link to this heading"></a></h3>
+<p>Display metadata and risk analysis for a package:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>spack<span class="w"> </span>ai-test<span class="w"> </span>openmpi
+</pre></div>
+</div>
+<p>Generate candidate specs pinned to a specific compiler:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>spack<span class="w"> </span>ai-test<span class="w"> </span>openmpi%gcc@13.3.0<span class="w"> </span>--generate
+</pre></div>
+</div>
+<p>Run the full automated testing loop against locally installed compilers:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>spack<span class="w"> </span>ai-test<span class="w"> </span>zlib<span class="w"> </span>--mape<span class="w"> </span>--local<span class="w"> </span>--test
+</pre></div>
+</div>
+<p>Decoupled cluster workflow — generate on the login node, execute in a batch job:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp"># </span>Step<span class="w"> </span><span class="m">1</span>:<span class="w"> </span>Login<span class="w"> </span>node<span class="w"> </span><span class="o">(</span>internet<span class="w"> </span>required<span class="o">)</span>
+<span class="gp">$ </span>spack<span class="w"> </span>ai-test<span class="w"> </span>hdf5<span class="w"> </span>--plan-only<span class="w"> </span>--model<span class="w"> </span>gemini-2.5-flash
+
+<span class="gp"># </span>Step<span class="w"> </span><span class="m">2</span>:<span class="w"> </span>Compute<span class="w"> </span>node<span class="w"> </span>batch<span class="w"> </span>script<span class="w"> </span><span class="o">(</span>no<span class="w"> </span>internet<span class="w"> </span>required<span class="o">)</span>
+<span class="gp">$ </span>spack<span class="w"> </span>ai-test<span class="w"> </span>hdf5<span class="w"> </span>--execute-queued<span class="w"> </span>--test<span class="w"> </span>--bisect
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="configuration.html" class="btn btn-neutral float-left" title="Configuration" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Vaishnavi Mishra, CERN-HSF GSoC.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

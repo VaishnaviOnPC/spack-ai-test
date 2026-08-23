@@ -1,0 +1,294 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Advanced Workflows &mdash; spack-ai-test Documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=01f34227"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Configuration" href="configuration.html" />
+    <link rel="prev" title="Basic Usage" href="basic_usage.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            spack-ai-test
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#installation">Installation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="getting_started.html#clone-the-extension-repository">1. Clone the Extension Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="getting_started.html#register-the-extension-in-spack">2. Register the Extension in Spack</a></li>
+<li class="toctree-l3"><a class="reference internal" href="getting_started.html#verify-installation">3. Verify Installation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#configuring-api-keys">Configuring API Keys</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#running-your-first-test">Running Your First Test</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="basic_usage.html">Basic Usage</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="basic_usage.html#inspecting-package-metadata">Inspecting Package Metadata</a></li>
+<li class="toctree-l2"><a class="reference internal" href="basic_usage.html#raw-json-schema-export">Raw JSON Schema Export</a></li>
+<li class="toctree-l2"><a class="reference internal" href="basic_usage.html#evaluating-spec-risk-scores">Evaluating Spec Risk Scores</a></li>
+<li class="toctree-l2"><a class="reference internal" href="basic_usage.html#generating-test-scenarios">Generating Test Scenarios</a></li>
+<li class="toctree-l2"><a class="reference internal" href="basic_usage.html#targeting-specific-compilers">Targeting Specific Compilers</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Advanced Workflows</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#the-mape-k-self-adaptive-loop">The MAPE-K Self-Adaptive Loop</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#testing-depth-build-and-regression-testing">Testing Depth: Build and Regression Testing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#building-concretized-specs">Building Concretized Specs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#running-package-test-suites">Running Package Test Suites</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#hpc-cluster-workflows-offline-compute-nodes">HPC Cluster Workflows (Offline / Compute Nodes)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#phase-1-login-node-online-generation">Phase 1: Login Node (Online Generation)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#phase-2-compute-node-offline-execution">Phase 2: Compute Node (Offline Execution)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#automated-failure-bisection">Automated Failure Bisection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#knowledge-base">Knowledge Base</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#inspecting-the-knowledge-base">Inspecting the Knowledge Base</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#resetting-the-knowledge-base">Resetting the Knowledge Base</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#configuration-precedence">Configuration Precedence</a></li>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#configuration-file-ai-test-yaml">Configuration File: <code class="docutils literal notranslate"><span class="pre">ai_test.yaml</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#configuration-options">Configuration Options</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#environment-variables">Environment Variables</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#api-keys">API Keys</a></li>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#extension-overrides">Extension Overrides</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#supported-llm-models">Supported LLM Models</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="command_reference.html">Command Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="command_reference.html#spack-ai-test"><code class="docutils literal notranslate"><span class="pre">spack</span> <span class="pre">ai-test</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="command_reference.html#synopsis">Synopsis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="command_reference.html#description">Description</a></li>
+<li class="toctree-l3"><a class="reference internal" href="command_reference.html#arguments">Arguments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="command_reference.html#options">Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="command_reference.html#examples">Examples</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">spack-ai-test</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Advanced Workflows</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/workflows.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="advanced-workflows">
+<span id="workflows"></span><h1>Advanced Workflows<a class="headerlink" href="#advanced-workflows" title="Link to this heading"></a></h1>
+<p>This section covers advanced automated testing workflows, including closed-loop
+execution, cluster-based offline testing, and automated failure bisection.</p>
+<section id="the-mape-k-self-adaptive-loop">
+<h2>The MAPE-K Self-Adaptive Loop<a class="headerlink" href="#the-mape-k-self-adaptive-loop" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">--mape</span></code> flag runs the full self-adaptive testing cycle:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>spack<span class="w"> </span>ai-test<span class="w"> </span>openmpi<span class="w"> </span>--mape<span class="w"> </span>--local
+</pre></div>
+</div>
+<p>The pipeline executes through four coordinated stages:</p>
+<ol class="arabic simple">
+<li><p><strong>Monitor</strong>: Retrieves accumulated test history from the Knowledge Base (<code class="docutils literal notranslate"><span class="pre">kb.json</span></code>) matching the package schema hash.</p></li>
+<li><p><strong>Analyze</strong>: Calculates empirical failure rates and prioritizes high-risk dependency branches.</p></li>
+<li><p><strong>Plan</strong>: Prompts the LLM with multi-source RAG context (live registry version gaps, historical failure patterns, and active GitHub issue signals).</p></li>
+<li><p><strong>Execute</strong>:
+* Pre-validates generated specs statically against the package schema.
+* Concretizes valid specs with Spack’s internal ASP solver.
+* Persists test outcomes (pass, concretize failure, build failure) back to the Knowledge Base.</p></li>
+</ol>
+<p>The terminal prints a single header line summarising the package state (KB entry count,
+failure rate, active compiler), followed by one result line per spec, then a totals
+line at the end. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">openmpi</span> <span class="o">|</span> <span class="n">KB</span><span class="p">:</span> <span class="mi">12</span> <span class="n">entries</span> <span class="o">|</span> <span class="n">failure</span> <span class="n">rate</span><span class="p">:</span> <span class="mf">0.42</span> <span class="p">(</span><span class="mi">5</span><span class="o">/</span><span class="mi">12</span><span class="p">)</span> <span class="o">|</span> <span class="n">compiler</span><span class="p">:</span> <span class="n">gcc</span><span class="o">@</span><span class="mf">13.3.0</span>
+<span class="p">[</span><span class="n">PASS</span><span class="p">]</span>  <span class="n">openmpi</span><span class="o">@</span><span class="mf">4.1.5</span> <span class="o">+</span><span class="n">pmi</span> <span class="o">%</span><span class="n">gcc</span><span class="o">@</span><span class="mf">13.3.0</span>
+<span class="p">[</span><span class="n">FAIL</span><span class="p">]</span>  <span class="n">openmpi</span><span class="o">@</span><span class="mf">4.0.7</span> <span class="o">+</span><span class="n">cuda</span> <span class="o">%</span><span class="n">gcc</span><span class="o">@</span><span class="mf">13.3.0</span>
+<span class="p">[</span><span class="n">PASS</span><span class="p">]</span>  <span class="n">openmpi</span><span class="o">@</span><span class="mf">4.1.6</span> <span class="o">~</span><span class="n">shared</span> <span class="o">%</span><span class="n">gcc</span><span class="o">@</span><span class="mf">13.3.0</span>
+<span class="mi">3</span> <span class="n">tested</span> <span class="o">|</span> <span class="mi">2</span> <span class="n">concretized</span> <span class="o">|</span> <span class="mi">1</span> <span class="n">failed</span> <span class="o">-&gt;</span> <span class="o">~/.</span><span class="n">spack</span><span class="o">/</span><span class="n">cache</span><span class="o">/</span><span class="n">ai_test</span><span class="o">/</span><span class="n">kb</span><span class="o">.</span><span class="n">json</span>
+</pre></div>
+</div>
+</section>
+<section id="testing-depth-build-and-regression-testing">
+<h2>Testing Depth: Build and Regression Testing<a class="headerlink" href="#testing-depth-build-and-regression-testing" title="Link to this heading"></a></h2>
+<p>By default, <code class="docutils literal notranslate"><span class="pre">--mape</span></code> validates that specs concretize. To extend testing to compilation and test suites:</p>
+<section id="building-concretized-specs">
+<h3>Building Concretized Specs<a class="headerlink" href="#building-concretized-specs" title="Link to this heading"></a></h3>
+<p>To compile concretized specs via <code class="docutils literal notranslate"><span class="pre">spack</span> <span class="pre">install</span></code>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>spack<span class="w"> </span>ai-test<span class="w"> </span>zlib<span class="w"> </span>--mape<span class="w"> </span>--local<span class="w"> </span>--build
+</pre></div>
+</div>
+</section>
+<section id="running-package-test-suites">
+<h3>Running Package Test Suites<a class="headerlink" href="#running-package-test-suites" title="Link to this heading"></a></h3>
+<p>To compile and execute the package test suite (<code class="docutils literal notranslate"><span class="pre">spack</span> <span class="pre">install</span> <span class="pre">--test=root</span></code>):</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>spack<span class="w"> </span>ai-test<span class="w"> </span>zlib<span class="w"> </span>--mape<span class="w"> </span>--local<span class="w"> </span>--test
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Passing <code class="docutils literal notranslate"><span class="pre">--test</span></code> automatically implies <code class="docutils literal notranslate"><span class="pre">--build</span></code>.</p>
+</div>
+</section>
+</section>
+<section id="hpc-cluster-workflows-offline-compute-nodes">
+<h2>HPC Cluster Workflows (Offline / Compute Nodes)<a class="headerlink" href="#hpc-cluster-workflows-offline-compute-nodes" title="Link to this heading"></a></h2>
+<p>In High Performance Computing (HPC) clusters, compute nodes frequently lack external
+internet access required to reach LLM APIs. <code class="docutils literal notranslate"><span class="pre">spack</span> <span class="pre">ai-test</span></code> provides a decoupled workflow
+to handle this environment:</p>
+<section id="phase-1-login-node-online-generation">
+<h3>Phase 1: Login Node (Online Generation)<a class="headerlink" href="#phase-1-login-node-online-generation" title="Link to this heading"></a></h3>
+<p>On a login or edge node with internet connectivity, generate candidate specs and queue them in the Knowledge Base:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>spack<span class="w"> </span>ai-test<span class="w"> </span>openmpi<span class="w"> </span>--plan-only<span class="w"> </span>--model<span class="w"> </span>gemini-2.5-flash
+</pre></div>
+</div>
+<p>This saves generated specs to <code class="docutils literal notranslate"><span class="pre">kb.json</span></code> with a status of <code class="docutils literal notranslate"><span class="pre">pending</span></code> without running concretization or builds.</p>
+</section>
+<section id="phase-2-compute-node-offline-execution">
+<h3>Phase 2: Compute Node (Offline Execution)<a class="headerlink" href="#phase-2-compute-node-offline-execution" title="Link to this heading"></a></h3>
+<p>In a compute node batch script (e.g., Slurm job) without internet connectivity:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>spack<span class="w"> </span>ai-test<span class="w"> </span>openmpi<span class="w"> </span>--execute-queued<span class="w"> </span>--test
+</pre></div>
+</div>
+<p>This reads all <code class="docutils literal notranslate"><span class="pre">pending</span></code> specs from the Knowledge Base, concretizes them, builds the packages, and records the test outcomes.</p>
+</section>
+</section>
+<section id="automated-failure-bisection">
+<h2>Automated Failure Bisection<a class="headerlink" href="#automated-failure-bisection" title="Link to this heading"></a></h2>
+<p>When a package build or test fails, determining the exact version where the regression occurred
+can be tedious. Adding <code class="docutils literal notranslate"><span class="pre">--bisect</span></code> enables automated failure localization:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>spack<span class="w"> </span>ai-test<span class="w"> </span>openmpi<span class="w"> </span>--mape<span class="w"> </span>--test<span class="w"> </span>--bisect
+</pre></div>
+</div>
+<p>When a deterministic failure occurs on package version <span class="math notranslate nohighlight">\(v_{\text{fail}}\)</span>:</p>
+<ol class="arabic simple">
+<li><p><strong>Exponential Galloping</strong>: The system tests predecessor versions in powers of two (<span class="math notranslate nohighlight">\(1, 2, 4, 8, \dots\)</span>) to establish a bounding range between a passing version and a failing version.</p></li>
+<li><p><strong>Binary Search</strong>: Once bounded, it performs a binary search to identify the exact commit or release version where the regression was introduced.</p></li>
+</ol>
+</section>
+<section id="knowledge-base">
+<h2>Knowledge Base<a class="headerlink" href="#knowledge-base" title="Link to this heading"></a></h2>
+<p>The Knowledge Base (<code class="docutils literal notranslate"><span class="pre">kb.json</span></code>) stores historical test outcomes keyed by package schema hash.</p>
+<ul class="simple">
+<li><p><strong>Deduplication</strong>: Previously tested configurations are never re-tested, so repeated runs
+of <code class="docutils literal notranslate"><span class="pre">--mape</span></code> progressively explore new parts of the configuration space.</p></li>
+<li><p><strong>Schema Versioning</strong>: When a <code class="docutils literal notranslate"><span class="pre">package.py</span></code> changes (e.g., a new version is added), the
+schema hash changes and the package’s KB history resets automatically. Prior data for that
+package is preserved but becomes inactive.</p></li>
+<li><p><strong>Pattern Mining</strong>: Features with high failure rates across accumulated tests (e.g., a
+specific variant flag or compiler) are automatically surfaced as risk context in future
+LLM prompts, improving generation quality over time.</p></li>
+</ul>
+<section id="inspecting-the-knowledge-base">
+<h3>Inspecting the Knowledge Base<a class="headerlink" href="#inspecting-the-knowledge-base" title="Link to this heading"></a></h3>
+<p>The KB is a plain JSON file located by default at <code class="docutils literal notranslate"><span class="pre">~/.spack/cache/ai_test/kb.json</span></code>.
+It is human-readable and can be inspected directly:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>cat<span class="w"> </span>~/.spack/cache/ai_test/kb.json<span class="w"> </span><span class="p">|</span><span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>json.tool<span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-60
+</pre></div>
+</div>
+</section>
+<section id="resetting-the-knowledge-base">
+<h3>Resetting the Knowledge Base<a class="headerlink" href="#resetting-the-knowledge-base" title="Link to this heading"></a></h3>
+<p>To clear the history for a specific package, delete entries with its <code class="docutils literal notranslate"><span class="pre">pkg_name</span></code> field
+from the JSON file. To reset the entire KB:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>rm<span class="w"> </span>~/.spack/cache/ai_test/kb.json
+</pre></div>
+</div>
+<p>The file is re-created automatically on the next run.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="basic_usage.html" class="btn btn-neutral float-left" title="Basic Usage" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="configuration.html" class="btn btn-neutral float-right" title="Configuration" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Vaishnavi Mishra, CERN-HSF GSoC.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

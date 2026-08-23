@@ -1,0 +1,256 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Basic Usage &mdash; spack-ai-test Documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=01f34227"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Advanced Workflows" href="workflows.html" />
+    <link rel="prev" title="Getting Started" href="getting_started.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            spack-ai-test
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#installation">Installation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="getting_started.html#clone-the-extension-repository">1. Clone the Extension Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="getting_started.html#register-the-extension-in-spack">2. Register the Extension in Spack</a></li>
+<li class="toctree-l3"><a class="reference internal" href="getting_started.html#verify-installation">3. Verify Installation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#configuring-api-keys">Configuring API Keys</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#running-your-first-test">Running Your First Test</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Basic Usage</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#inspecting-package-metadata">Inspecting Package Metadata</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#raw-json-schema-export">Raw JSON Schema Export</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#evaluating-spec-risk-scores">Evaluating Spec Risk Scores</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#generating-test-scenarios">Generating Test Scenarios</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#targeting-specific-compilers">Targeting Specific Compilers</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="workflows.html">Advanced Workflows</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="workflows.html#the-mape-k-self-adaptive-loop">The MAPE-K Self-Adaptive Loop</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflows.html#testing-depth-build-and-regression-testing">Testing Depth: Build and Regression Testing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="workflows.html#building-concretized-specs">Building Concretized Specs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="workflows.html#running-package-test-suites">Running Package Test Suites</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="workflows.html#hpc-cluster-workflows-offline-compute-nodes">HPC Cluster Workflows (Offline / Compute Nodes)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="workflows.html#phase-1-login-node-online-generation">Phase 1: Login Node (Online Generation)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="workflows.html#phase-2-compute-node-offline-execution">Phase 2: Compute Node (Offline Execution)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="workflows.html#automated-failure-bisection">Automated Failure Bisection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflows.html#knowledge-base">Knowledge Base</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="workflows.html#inspecting-the-knowledge-base">Inspecting the Knowledge Base</a></li>
+<li class="toctree-l3"><a class="reference internal" href="workflows.html#resetting-the-knowledge-base">Resetting the Knowledge Base</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#configuration-precedence">Configuration Precedence</a></li>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#configuration-file-ai-test-yaml">Configuration File: <code class="docutils literal notranslate"><span class="pre">ai_test.yaml</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#configuration-options">Configuration Options</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#environment-variables">Environment Variables</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#api-keys">API Keys</a></li>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#extension-overrides">Extension Overrides</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#supported-llm-models">Supported LLM Models</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="command_reference.html">Command Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="command_reference.html#spack-ai-test"><code class="docutils literal notranslate"><span class="pre">spack</span> <span class="pre">ai-test</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="command_reference.html#synopsis">Synopsis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="command_reference.html#description">Description</a></li>
+<li class="toctree-l3"><a class="reference internal" href="command_reference.html#arguments">Arguments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="command_reference.html#options">Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="command_reference.html#examples">Examples</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">spack-ai-test</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Basic Usage</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/basic_usage.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="basic-usage">
+<span id="id1"></span><h1>Basic Usage<a class="headerlink" href="#basic-usage" title="Link to this heading"></a></h1>
+<p>This section covers the core command-line workflows for inspecting package metadata,
+computing risk scores, and generating candidate test configurations.</p>
+<section id="inspecting-package-metadata">
+<h2>Inspecting Package Metadata<a class="headerlink" href="#inspecting-package-metadata" title="Link to this heading"></a></h2>
+<p>Running <code class="docutils literal notranslate"><span class="pre">spack</span> <span class="pre">ai-test</span> <span class="pre">&lt;package&gt;</span></code> extracts and displays structured metadata directly
+from the package recipe (<code class="docutils literal notranslate"><span class="pre">package.py</span></code>):</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>spack<span class="w"> </span>ai-test<span class="w"> </span>hdf5
+</pre></div>
+</div>
+<p>This output provides:</p>
+<ul class="simple">
+<li><p><strong>Declared Versions &amp; Preferred Version</strong>: Lists available releases and identifies
+the leading-edge version.</p></li>
+<li><p><strong>Variants</strong>: Groups boolean and multi-valued variants along with their default values.</p></li>
+<li><p><strong>Dependencies &amp; Version Constraints</strong>: Summarizes direct dependencies, version bounds,
+and activation conditions (<code class="docutils literal notranslate"><span class="pre">when=</span></code>).</p></li>
+<li><p><strong>Risk Signals</strong>: Highlights structural risk factors such as unbounded dependency ranges
+(<code class="docutils literal notranslate"><span class="pre">:</span></code>), multi-major version spans, virtual providers (e.g., <code class="docutils literal notranslate"><span class="pre">mpi</span></code>), and C++ ABI linkage.</p></li>
+</ul>
+</section>
+<section id="raw-json-schema-export">
+<h2>Raw JSON Schema Export<a class="headerlink" href="#raw-json-schema-export" title="Link to this heading"></a></h2>
+<p>To emit the canonical JSON representation of a package’s schema for automated processing
+or CI auditing:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>spack<span class="w"> </span>ai-test<span class="w"> </span>hdf5<span class="w"> </span>--json
+</pre></div>
+</div>
+<p>To write the schema directly to a file (<code class="docutils literal notranslate"><span class="pre">canonical.json</span></code>) inside a target directory:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>spack<span class="w"> </span>ai-test<span class="w"> </span>hdf5<span class="w"> </span>--output-dir<span class="w"> </span>./schema_reports
+</pre></div>
+</div>
+</section>
+<section id="evaluating-spec-risk-scores">
+<h2>Evaluating Spec Risk Scores<a class="headerlink" href="#evaluating-spec-risk-scores" title="Link to this heading"></a></h2>
+<p>You can compute the risk score of a specific, user-provided spec without invoking the LLM:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>spack<span class="w"> </span>ai-test<span class="w"> </span>hdf5<span class="w"> </span>--score<span class="w"> </span><span class="s2">"hdf5@1.14.0 +cxx +fortran %gcc@13.3.0"</span>
+</pre></div>
+</div>
+<p>The scoring engine evaluates the spec against the package dependency graph and historical
+Knowledge Base data, displaying:</p>
+<ul class="simple">
+<li><p><strong>Structural Score</strong>: A multiplicative score combining unbounded version ranges, version
+spans across major releases, C++ ABI exposure, and virtual dependency depth.</p></li>
+<li><p><strong>Amplification Factor</strong>: A dynamic weight based on historical failure rates in the
+Knowledge Base. On a fresh installation with no KB history, this factor is <code class="docutils literal notranslate"><span class="pre">1.0</span></code>.</p></li>
+<li><p><strong>Final Risk Score</strong>: The combined metric used by the planning engine to steer LLM
+generation toward high-risk configuration regions.</p></li>
+</ul>
+</section>
+<section id="generating-test-scenarios">
+<h2>Generating Test Scenarios<a class="headerlink" href="#generating-test-scenarios" title="Link to this heading"></a></h2>
+<p>To invoke the LLM and generate off-leading-edge test specifications without running
+concretization:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>spack<span class="w"> </span>ai-test<span class="w"> </span>openmpi<span class="w"> </span>--generate
+</pre></div>
+</div>
+<p>The language model receives the extracted schema and risk context, and outputs 3–5
+candidate spec strings. Each spec is printed on its own line and can be passed directly
+to <code class="docutils literal notranslate"><span class="pre">spack</span> <span class="pre">spec</span></code> for manual verification.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">--generate</span></code> does not write anything to the Knowledge Base. To run the full loop
+including concretization and KB persistence, use <code class="docutils literal notranslate"><span class="pre">--mape</span></code>. See <a class="reference internal" href="workflows.html#workflows"><span class="std std-ref">Advanced Workflows</span></a>
+for details.</p>
+</div>
+</section>
+<section id="targeting-specific-compilers">
+<h2>Targeting Specific Compilers<a class="headerlink" href="#targeting-specific-compilers" title="Link to this heading"></a></h2>
+<p>A compiler constraint can be appended directly to the package argument using standard
+Spack spec syntax:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>spack<span class="w"> </span>ai-test<span class="w"> </span>openmpi%gcc@13.3.0<span class="w"> </span>--generate
+</pre></div>
+</div>
+<p>This pins the compiler for both schema analysis and LLM prompt construction. On cluster
+environments where only specific compilers are installed, add <code class="docutils literal notranslate"><span class="pre">--local</span></code> to restrict
+generation to locally available compilers only:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>spack<span class="w"> </span>ai-test<span class="w"> </span>openmpi%gcc@13.3.0<span class="w"> </span>--mape<span class="w"> </span>--local
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="getting_started.html" class="btn btn-neutral float-left" title="Getting Started" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="workflows.html" class="btn btn-neutral float-right" title="Advanced Workflows" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Vaishnavi Mishra, CERN-HSF GSoC.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,273 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Getting Started &mdash; spack-ai-test Documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=01f34227"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Basic Usage" href="basic_usage.html" />
+    <link rel="prev" title="spack-ai-test: AI-Assisted Package Testing" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            spack-ai-test
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Getting Started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#installation">Installation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#clone-the-extension-repository">1. Clone the Extension Repository</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#register-the-extension-in-spack">2. Register the Extension in Spack</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#verify-installation">3. Verify Installation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#configuring-api-keys">Configuring API Keys</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#running-your-first-test">Running Your First Test</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="basic_usage.html">Basic Usage</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="basic_usage.html#inspecting-package-metadata">Inspecting Package Metadata</a></li>
+<li class="toctree-l2"><a class="reference internal" href="basic_usage.html#raw-json-schema-export">Raw JSON Schema Export</a></li>
+<li class="toctree-l2"><a class="reference internal" href="basic_usage.html#evaluating-spec-risk-scores">Evaluating Spec Risk Scores</a></li>
+<li class="toctree-l2"><a class="reference internal" href="basic_usage.html#generating-test-scenarios">Generating Test Scenarios</a></li>
+<li class="toctree-l2"><a class="reference internal" href="basic_usage.html#targeting-specific-compilers">Targeting Specific Compilers</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="workflows.html">Advanced Workflows</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="workflows.html#the-mape-k-self-adaptive-loop">The MAPE-K Self-Adaptive Loop</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflows.html#testing-depth-build-and-regression-testing">Testing Depth: Build and Regression Testing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="workflows.html#building-concretized-specs">Building Concretized Specs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="workflows.html#running-package-test-suites">Running Package Test Suites</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="workflows.html#hpc-cluster-workflows-offline-compute-nodes">HPC Cluster Workflows (Offline / Compute Nodes)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="workflows.html#phase-1-login-node-online-generation">Phase 1: Login Node (Online Generation)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="workflows.html#phase-2-compute-node-offline-execution">Phase 2: Compute Node (Offline Execution)</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="workflows.html#automated-failure-bisection">Automated Failure Bisection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="workflows.html#knowledge-base">Knowledge Base</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="workflows.html#inspecting-the-knowledge-base">Inspecting the Knowledge Base</a></li>
+<li class="toctree-l3"><a class="reference internal" href="workflows.html#resetting-the-knowledge-base">Resetting the Knowledge Base</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#configuration-precedence">Configuration Precedence</a></li>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#configuration-file-ai-test-yaml">Configuration File: <code class="docutils literal notranslate"><span class="pre">ai_test.yaml</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#configuration-options">Configuration Options</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#environment-variables">Environment Variables</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#api-keys">API Keys</a></li>
+<li class="toctree-l3"><a class="reference internal" href="configuration.html#extension-overrides">Extension Overrides</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html#supported-llm-models">Supported LLM Models</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="command_reference.html">Command Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="command_reference.html#spack-ai-test"><code class="docutils literal notranslate"><span class="pre">spack</span> <span class="pre">ai-test</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="command_reference.html#synopsis">Synopsis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="command_reference.html#description">Description</a></li>
+<li class="toctree-l3"><a class="reference internal" href="command_reference.html#arguments">Arguments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="command_reference.html#options">Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="command_reference.html#examples">Examples</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">spack-ai-test</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Getting Started</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/getting_started.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="getting-started">
+<span id="id1"></span><h1>Getting Started<a class="headerlink" href="#getting-started" title="Link to this heading"></a></h1>
+<p>This guide walks you through setting up and running your first test with <code class="docutils literal notranslate"><span class="pre">spack</span> <span class="pre">ai-test</span></code>.</p>
+<p>A note on terminology: a <strong>leading-edge</strong> configuration is what most CI pipelines test —
+the newest package version, the latest compiler, and all default variants. This tool targets
+<strong>off-leading-edge</strong> configurations: older version pins, non-default variants, and dependency
+combinations that are rarely (if ever) tested but frequently encountered by real users.</p>
+<section id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h2>
+<p>Before installing <code class="docutils literal notranslate"><span class="pre">spack-ai-test</span></code>, ensure you have:</p>
+<ul class="simple">
+<li><p><strong>Spack</strong> (v0.21 or later) installed and available in your <code class="docutils literal notranslate"><span class="pre">PATH</span></code>.</p></li>
+<li><p><strong>Python</strong> 3.9 or higher.</p></li>
+<li><p>An API key for at least one supported LLM provider:</p>
+<ul>
+<li><p><strong>Google Gemini</strong> (<code class="docutils literal notranslate"><span class="pre">GEMINI_API_KEY</span></code>)</p></li>
+<li><p><strong>Anthropic Claude</strong> (<code class="docutils literal notranslate"><span class="pre">ANTHROPIC_API_KEY</span></code>)</p></li>
+<li><p><strong>OpenAI</strong> (<code class="docutils literal notranslate"><span class="pre">OPENAI_API_KEY</span></code>)</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">spack-ai-test</span></code> is packaged as a standard Spack command extension.</p>
+<section id="clone-the-extension-repository">
+<h3>1. Clone the Extension Repository<a class="headerlink" href="#clone-the-extension-repository" title="Link to this heading"></a></h3>
+<p>Clone the repository to a convenient location on your system — for example, alongside other
+Spack extensions or in your home directory:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/VaishnaviOnPC/spack-ai-test.git<span class="w"> </span>/path/to/spack-ai-test
+</pre></div>
+</div>
+</section>
+<section id="register-the-extension-in-spack">
+<h3>2. Register the Extension in Spack<a class="headerlink" href="#register-the-extension-in-spack" title="Link to this heading"></a></h3>
+<p>Add the cloned directory to the <code class="docutils literal notranslate"><span class="pre">extensions</span></code> list in your Spack configuration
+(e.g., <code class="docutils literal notranslate"><span class="pre">~/.spack/config.yaml</span></code>):</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">config</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">extensions</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/path/to/spack-ai-test</span>
+</pre></div>
+</div>
+<p>Alternatively, register it directly from the command line:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>spack<span class="w"> </span>config<span class="w"> </span>add<span class="w"> </span><span class="s2">"config:extensions:[/path/to/spack-ai-test]"</span>
+</pre></div>
+</div>
+</section>
+<section id="verify-installation">
+<h3>3. Verify Installation<a class="headerlink" href="#verify-installation" title="Link to this heading"></a></h3>
+<p>Check that Spack recognizes the extension:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>spack<span class="w"> </span>ai-test<span class="w"> </span>--help
+</pre></div>
+</div>
+<p>You should see the command description and the full list of available flags.</p>
+</section>
+</section>
+<section id="configuring-api-keys">
+<h2>Configuring API Keys<a class="headerlink" href="#configuring-api-keys" title="Link to this heading"></a></h2>
+<p>Export your preferred provider’s API key in your shell environment before running any
+generation commands:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp"># </span>Google<span class="w"> </span>Gemini<span class="w"> </span><span class="o">(</span>default<span class="o">)</span>
+<span class="gp">$ </span><span class="nb">export</span><span class="w"> </span><span class="nv">GEMINI_API_KEY</span><span class="o">=</span><span class="s2">"your-gemini-api-key"</span>
+
+<span class="gp"># </span>Anthropic<span class="w"> </span>Claude
+<span class="gp">$ </span><span class="nb">export</span><span class="w"> </span><span class="nv">ANTHROPIC_API_KEY</span><span class="o">=</span><span class="s2">"your-anthropic-api-key"</span>
+
+<span class="gp"># </span>OpenAI
+<span class="gp">$ </span><span class="nb">export</span><span class="w"> </span><span class="nv">OPENAI_API_KEY</span><span class="o">=</span><span class="s2">"your-openai-api-key"</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Default models and settings can also be configured in <code class="docutils literal notranslate"><span class="pre">~/.spack/ai_test.yaml</span></code>.
+See <a class="reference internal" href="configuration.html#configuration"><span class="std std-ref">Configuration</span></a> for details.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>If no API key is set for the selected model, the tool raises an error at the Plan stage
+before any concretization is attempted. Inspection commands (<code class="docutils literal notranslate"><span class="pre">spack</span> <span class="pre">ai-test</span> <span class="pre">&lt;package&gt;</span></code>
+without <code class="docutils literal notranslate"><span class="pre">--mape</span></code> or <code class="docutils literal notranslate"><span class="pre">--generate</span></code>) do not require an API key.</p>
+</div>
+</section>
+<section id="running-your-first-test">
+<h2>Running Your First Test<a class="headerlink" href="#running-your-first-test" title="Link to this heading"></a></h2>
+<p>To inspect a package’s metadata and computed risk signals without invoking the LLM:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>spack<span class="w"> </span>ai-test<span class="w"> </span>zlib
+</pre></div>
+</div>
+<p>The output lists the extracted versions, variants, declared dependency constraints, and a
+set of computed risk signals — for example, unbounded version ranges or virtual provider
+dependencies. No API key is required for this step.</p>
+<p>To run the full self-adaptive testing loop against locally installed compilers:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>spack<span class="w"> </span>ai-test<span class="w"> </span>zlib<span class="w"> </span>--mape<span class="w"> </span>--local<span class="w"> </span>--model<span class="w"> </span>gemini-2.5-flash
+</pre></div>
+</div>
+<p>The tool prints one result line per generated spec (<code class="docutils literal notranslate"><span class="pre">[PASS]</span></code>, <code class="docutils literal notranslate"><span class="pre">[FAIL]</span></code>, or
+<code class="docutils literal notranslate"><span class="pre">[BUILD_FAIL]</span></code>) followed by a totals summary showing how many specs were tested,
+concretized, and failed.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="spack-ai-test: AI-Assisted Package Testing" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="basic_usage.html" class="btn btn-neutral float-right" title="Basic Usage" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Vaishnavi Mishra, CERN-HSF GSoC.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
